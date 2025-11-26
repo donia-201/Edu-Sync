@@ -24,16 +24,16 @@
 </head>
 <body class="min-vh-96 justify-content-start align-items-center">
     <section class="container bg-fo">
-        <form class="row g-3 ">
+        <form class="row g-3 " id="login-form">
     <div class="col-12">
-        <label for="validationServer01" class="form-label">your name</label>
-        <input type="text" class="form-control " id="validationServer01" placeholder="Your Name Is ..." required>
+        <label for="uNameOrEmail" class="form-label">Enter your User Name or E-mail </label>
+        <input type="text" class="form-control " id="uNameOrEmail" placeholder="Your User Name or E-mail Is ..." required>
         <div class="valid-feedback">
         </div>
     </div>
     <div class="col-12">
         <label for="pass" class="form-label">Pass-Word</label>
-        <input type="text" class="form-control " id="pass" placeholder=" write strong valid pass word" required>
+        <input type="text" class="form-control " id="pass" placeholder="pass word" required>
         <div class="valid-feedback">
         </div>
     </div> 
@@ -61,6 +61,7 @@
     </button>
         </div>
     </section>
+    <script src="../js/login.js"></script>
     <script src="../js/theme.js"></script>
 </body>
 </html>

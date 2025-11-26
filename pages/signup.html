@@ -32,27 +32,30 @@
     </section>
     <div class="d-flex justify-content-center">
     <section class="container bg-fo ">
-        <form class="row g-3">
+        <form class="row g-3" id="signup-form">
         <div class="col-12">
         <label for="name" class="form-label">your name</label>
         <input type="text" class="form-control " id="name" placeholder="Your Name Is ..." required>
         </div>
                 <div class="col-12">
-        <label for="name" class="form-label">your Email</label>
+        <label for="email" class="form-label">your Email</label>
         <input type="email" class="form-control " id="email" placeholder="example abc@gmail.com ..." required>
+        <span class="error" id="email-error"></span>
                 </div>
         <div class="col-12">
-            <label for="u-name" class="form-label">Username</label>
+            <label for="uName" class="form-label">Username</label>
         <div class="input-group ">
-        <span class="input-group-text" id="inputGroupPrepend3">@</span>
-        <input type="text" class="form-control " id="u-name" placeholder="Your User-Name Is ..." 
-        aria-describedby="inputGroupPrepend3 " required>
+        <input type="text" class="form-control " id="uName" placeholder="Your User-Name Is ..." required>
+                <span class="error" id="uName-error"></span>
+
         </div>
             <div> Please choose a username.</div>
         </div>
     <div class="col-12">
-        <label for="pass" class="form-label">Pass-Word</label>
-        <input type="password" class="form-control " id="pass" placeholder=" write strong valid pass word" required>
+        <label for="password" class="form-label">Pass-Word</label>
+        <input type="password" class="form-control " id="password" placeholder=" write strong valid pass word" required>
+                <span class="error" id="password-error"></span>
+
         </div>
     <div class="col-12">
         <label for="pass2" class="form-label">Confirm Pass-Word</label>
@@ -61,13 +64,30 @@
     
     <div class="col-12">
         <label for="sfield" class="form-label">Study Field</label>
-        <select class="form-select form-control " id="sfield" aria-describedby="validationServer04Feedback" required>
+        <select class="form-select form-control " id="sfield" onchange="toggleOtherField()" required>
         <option selected disabled value="">chooce...</option>
-        <option > programming</option>
-        <option>engineering</option>
-        <option>chemistry </option>
-        <option>physics</option>
+        <option value="Architecture"> Architecture</option>
+        <option value="AI"> AI</option>
+        <option value="Biology"> Biology</option>
+        <option value="Business Administration"> Business Administration</option>
+        <option value="Chemistry"> Chemistry</option>
+        <option value="Computer science"> Computer science</option>
+        <option value="Cyber security"> Cyber security</option>
+        <option value=" Data science"> Data science</option>
+        <option value="Education"> Education</option>
+        <option value="Engineering"> Engineering</option>
+        <option value="Graphic Design">Graphic Design </option>
+        <option value="Law">Law</option>
+        <option value="Marketing"> Marketing</option>
+        <option value="Mathematics"> Mathematics</option>
+        <option value="Medicine"> Medicine</option>
+        <option value="Pharmacy"> Pharmacy</option>
+        <option value="Physics"> Physics</option>
+        <option value="Psychology"> Psychology</option>
+        <option value="Static"> Static</option>
+        <option value="Other"> Other</option>
         </select>
+        <input type="text" name="OtherField" class="form-control mt-4 " id="OtherField" placeholder="Enter Your study Fild...">
     </div>
     <div class="col-12">
         <div class="form-check">
@@ -81,7 +101,7 @@
         </div>
     </div>
     <div class="col-12">
-    <button class="btn button-primary" type="submit">Submit form</button>
+    <button class="btn button-primary" type="submit">Sign up</button>
 </div>
 </form>
     </section>
@@ -105,6 +125,7 @@
     </button>
         </div>
     </section>
+    <script src="../js/signup.js"></script>
     <script src="../js/theme.js"></script>
 </body>
 </html>

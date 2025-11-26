@@ -17,7 +17,7 @@
   --font-body: 'Playfair Display', serif !important;
 }
 
-body {
+body{
   background-color: var(--color-bg-light);
   font-family: var(--font-body);
   color: var(--color-text-main);
@@ -26,8 +26,12 @@ body {
 }
 
 /* nav‑bar */
+.navbar{
+  flex-grow: 1;
+}
 .container{
   display:flex;
+  flex-grow:1 ;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 10px 10px -4px rgba(0, 0, 0, 0.1);
@@ -41,6 +45,11 @@ body {
 .title1 {
   font-family: var(--font-heading);
   font-size: 1.6rem;
+  font-weight: bold;
+}
+.title2{
+    font-family: var(--font-heading);
+  font-size: 1.2rem;
   font-weight: bold;
 }
 .icon {
