@@ -4,8 +4,8 @@
     let BREAK_MIN = 5;
     const GROW_STAGES = 4; 
 
-    const focusGifUrl = "../imgs/200w.webp"; // استبدلي بالـ GIF اللي تحبيه
-    const breakGifUrl = "../imgs/200w-1.webp"; // استبدلي بالـ GIF بريك
+    const focusGifUrl = "../imgs/study.jpg"; // استبدلي بالـ GIF اللي تحبيه
+    const breakGifUrl = "../imgs/break.jpg"; // استبدلي بالـ GIF بريك
 
     /* ==== عناصر الـ DOM ==== */
     const startBtn = document.getElementById("startBtn");

@@ -87,6 +87,18 @@ label , .heading{
   color: var(--color-accent-dark);
 }
 
+.input-group {
+  position: relative;
+}
+
+.toggle-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--color-primary-dark);
+}
 
 #OtherField{
   display: none;

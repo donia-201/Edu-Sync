@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduSync</title>
     <link rel="stylesheet" href="../assets/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/all.min.css">
     <link rel="stylesheet" href="../assets/signup.css">
     <link rel="stylesheet" href="../assets/theme.css">
     <link
@@ -51,16 +52,25 @@
         </div>
             <div> Please choose a username.</div>
         </div>
-    <div class="col-12">
-        <label for="password" class="form-label">Pass-Word</label>
-        <input type="password" class="form-control " id="password" placeholder=" write strong valid pass word" required>
-                <span class="error" id="password-error"></span>
-
-        </div>
-    <div class="col-12">
-        <label for="pass2" class="form-label">Confirm Pass-Word</label>
-        <input type="password" class="form-control " id="pass2" placeholder=" Re-write  pass word" required>
-        </div>
+<div class="col-12">
+  <label for="password" class="form-label">Pass-Word</label>
+  <div class="input-group">
+    <input type="password" class="form-control pass" id="password" placeholder=" write strong valid pass word" required>
+    <span id="togglePassword" class="toggle-icon">
+      <i class="fa-solid fa-eye"></i>
+    </span>
+  </div>
+  <span class="error" id="password-error"></span>
+</div>
+<div class="col-12">
+  <label for="pass2" class="form-label">Confirm Pass-Word</label>
+  <div class="input-group">
+    <input type="password" class="form-control pass" id="pass2" placeholder=" Re-write  pass word" required>
+    <span id="togglePassword2" class="toggle-icon">
+      <i class="fa-solid fa-eye icon"></i>
+    </span>
+  </div>
+</div>
     
     <div class="col-12">
         <label for="sfield" class="form-label">Study Field</label>
@@ -113,6 +123,10 @@
         </div>
         <div>
                 <button class="btn button-outline-primary">
+                            <div id="g_id_onload"
+    data-client_id="562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com"
+    data-callback="handleCredentialResponse">
+</div>
         <a class=" text-decoration-none" href="">continue with 
                 <svg  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24"  style="display: inline;">
         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
@@ -124,7 +138,9 @@
         </a>
     </button>
         </div>
+
     </section>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="../js/signup.js"></script>
     <script src="../js/theme.js"></script>
 </body>

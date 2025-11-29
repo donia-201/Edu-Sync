@@ -62,3 +62,22 @@ form.addEventListener("submit", function (e) {
         submitBtn.textContent = "Login";
     });
 });
+
+// google log in
+function handleCredentialResponse(response){
+    const token= response.credential;
+    fetch("http://127.0.0.1:5000/google-signin", {
+    metho:"post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({token:token}),
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.success){
+            localStorage.setItem("google_token",token);
+            window.location.href="/pages/home.html";
+        } else{
+            alert(data.msg);
+        }
+    });
+}
