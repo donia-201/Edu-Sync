@@ -11,34 +11,25 @@ const passError = document.getElementById("password-error");
 function setupToggle(inputId, toggleId) {
   const input = document.getElementById(inputId);
   const toggle = document.getElementById(toggleId);
-
   if (!toggle) return;
-
   const icon = toggle.querySelector("i");
 
   toggle.addEventListener("click", () => {
     const type = input.type === "password" ? "text" : "password";
     input.type = type;
-
-    if (type === "password") {
-      icon.classList.remove("fa-eye-slash");
-      icon.classList.add("fa-eye");
-    } else {
-      icon.classList.remove("fa-eye");
-      icon.classList.add("fa-eye-slash");
-    }
+    icon.classList.toggle("fa-eye");
+    icon.classList.toggle("fa-eye-slash");
   });
 }
-//toggle  other field
-function toggleOtherField(){
-    const select =document.getElementById('sfield');
-    const otherField=document.getElementById("OtherField");
-    if(select.value=== 'Other'){
-        otherField.style.display='block';
-    }
-}
 
-// FIXED IDs
+// Toggle Other Field
+function toggleOtherField() {
+  const select = document.getElementById("sfield");
+  const otherField = document.getElementById("OtherField");
+  otherField.style.display = select.value === "Other" ? "block" : "none";
+}
+document.getElementById("OtherField").style.display = "none";
+
 setupToggle("password", "togglePassword");
 setupToggle("pass2", "togglePassword2");
 
@@ -96,31 +87,39 @@ form.addEventListener("submit", function (e) {
       password: password.value.trim(),
     }),
   })
-    .then((res) => {
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      return res.json();
-    })
-    .then((data) => {
-      if (!data.success) {
-        if (data.msg.includes("Email")) emailError.textContent = data.msg;
-        else if (data.msg.includes("Username")) uNameError.textContent = data.msg;
+    .then(async (res) => {
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = body.msg || Server `error: ${res.status}`;
+        if (msg.includes("Email")) emailError.textContent = msg;
+        else if (msg.includes("Username")) uNameError.textContent = msg;
+        else alert(msg);
 
         submitBtn.disabled = false;
         submitBtn.textContent = "Sign Up";
-      } else {
+        throw new Error(msg);
+      }
+      return body;
+    })
+    .then((data) => {
+      if (data.success) {
         alert("Account created! Redirecting...");
         form.reset();
         window.location.href = "home.html";
       }
     })
-    .catch(() => {
-      alert("Something went wrong. Please try again.");
+    .catch((err) => {
+      console.error(err);
+      if (!emailError.textContent && !uNameError.textContent && !passError.textContent) {
+        alert("Something went wrong. Please try again.");
+      }
       submitBtn.disabled = false;
       submitBtn.textContent = "Sign Up";
     });
 });
 
-// sign up with google
+// Google Sign-In
 function handleCredentialResponse(response) {
-    console.log("Encoded JWT ID token: " + response.credential);
+  console.log("Encoded JWT ID token: " + response.credential);
 }
+ 
