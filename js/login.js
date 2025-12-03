@@ -33,7 +33,7 @@ form.addEventListener("submit", function (e) {
     submitBtn.textContent = "Logging in...";
 
     // Send data to backend
-    fetch("http://127.0.0.1:5000/login", {
+    fetch("http://edu-sync-back-end--doniaafify615.repl.co/login", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
@@ -66,8 +66,8 @@ form.addEventListener("submit", function (e) {
 // google log in
 function handleCredentialResponse(response){
     const token= response.credential;
-    fetch("http://127.0.0.1:5000/google-signin", {
-    metho:"post",
+    fetch("http://edu-sync-back-end--doniaafify615.repl.co/google-signin", {
+    method:"post",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({token:token}),
     })

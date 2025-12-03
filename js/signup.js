@@ -3,10 +3,12 @@ const user_Name = document.getElementById("uName");
 const Name = document.getElementById("name");
 const email = document.getElementById("email");
 const password = document.getElementById("password");
+const confirmPassword = document.getElementById("pass2");
 
 const uNameError = document.getElementById("uName-error");
 const emailError = document.getElementById("email-error");
 const passError = document.getElementById("password-error");
+const confirmPassError = document.getElementById("confirm-password-error");
 
 function setupToggle(inputId, toggleId) {
   const input = document.getElementById(inputId);
@@ -44,6 +46,7 @@ form.addEventListener("submit", function (e) {
   uNameError.textContent = "";
   emailError.textContent = "";
   passError.textContent = "";
+  confirmPassError.textContent = "";
 
   let valid = true;
 
@@ -72,13 +75,22 @@ form.addEventListener("submit", function (e) {
     valid = false;
   }
 
+  // Confirm password
+  if (!confirmPassword.value.trim()) {
+    confirmPassError.textContent = "Please confirm your password.";
+    valid = false;
+  } else if (confirmPassword.value.trim() !== password.value.trim()) {
+    confirmPassError.textContent = "Passwords do not match.";
+    valid = false;
+  }
+
   if (!valid) return;
 
   const submitBtn = form.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
   submitBtn.textContent = "Signing up...";
 
-  fetch("http://127.0.0.1:5000/signup", {
+  fetch("https://edu-sync-back-end--doniaafify615.repl.co/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -90,7 +102,7 @@ form.addEventListener("submit", function (e) {
     .then(async (res) => {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = body.msg || Server `error: ${res.status}`;
+        const msg = body.msg || Server error: ${res.status};
         if (msg.includes("Email")) emailError.textContent = msg;
         else if (msg.includes("Username")) uNameError.textContent = msg;
         else alert(msg);
@@ -102,7 +114,8 @@ form.addEventListener("submit", function (e) {
       return body;
     })
     .then((data) => {
-      if (data.success) {
+
+if (data.success) {
         alert("Account created! Redirecting...");
         form.reset();
         window.location.href = "home.html";
@@ -110,7 +123,12 @@ form.addEventListener("submit", function (e) {
     })
     .catch((err) => {
       console.error(err);
-      if (!emailError.textContent && !uNameError.textContent && !passError.textContent) {
+      if (
+        !emailError.textContent &&
+        !uNameError.textContent &&
+        !passError.textContent &&
+        !confirmPassError.textContent
+      ) {
         alert("Something went wrong. Please try again.");
       }
       submitBtn.disabled = false;
@@ -118,8 +136,29 @@ form.addEventListener("submit", function (e) {
     });
 });
 
-// Google Sign-In
+// GOOGLE SIGN-IN
 function handleCredentialResponse(response) {
-  console.log("Encoded JWT ID token: " + response.credential);
+  const idToken = response.credential;
+
+  fetch("https://edu-sync-back-end--doniaafify615.repl.co/google-signin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  })
+    .then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert(data.msg || "Google sign-in failed.");
+        throw new Error(data.msg);
+      }
+
+      // Success
+      alert("Logged in with Google! Redirecting...");
+      window.location.href = "home.html";
+    })
+    .catch((err) => {
+      console.error("Google sign-in error:", err);
+      alert("Google login failed. Try again.");
+    });
 }
- 
