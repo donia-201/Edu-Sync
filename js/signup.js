@@ -102,7 +102,7 @@ form.addEventListener("submit", function (e) {
     .then(async (res) => {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = body.msg || Server error: ${res.status};
+        const msg = body.msg || Server `error: ${res.status}`;
         if (msg.includes("Email")) emailError.textContent = msg;
         else if (msg.includes("Username")) uNameError.textContent = msg;
         else alert(msg);
