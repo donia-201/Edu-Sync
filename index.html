@@ -20,7 +20,7 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 />
 <link rel="shortcut icon" href="./imgs/education.png" type="image/x-icon">
-    
+    https://accounts.google.com/gsi/client</script>
 </head>
 <body>
     <main>
@@ -174,13 +174,13 @@ document.querySelectorAll('.feature-card').forEach(card => {
 observer.observe(card);
 });
 
-        google.accounts.id.initialize({
-            client_id:"562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
-            callback:handleCredentialResponse
-        });
-        function GoogleLogin(){
-            google.accounts.id.prompt();
-        }
+function GoogleLogin() {
+    if (!codeClient) {
+      console.error('Google OAuth client not initialized yet.');
+      return;
+    }
+    codeClient.requestCode();
+}
 </script>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
