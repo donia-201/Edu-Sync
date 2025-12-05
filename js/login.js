@@ -33,7 +33,7 @@ form.addEventListener("submit", function (e) {
     submitBtn.textContent = "Logging in...";
 
     // Send data to backend
-    fetch("http://edu-sync-back-end--doniaafify615.repl.co/login", {
+    fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/login", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
@@ -52,7 +52,7 @@ form.addEventListener("submit", function (e) {
             submitBtn.textContent = "Login";
         } else {
             alert("Welcome!");
-            window.location.href = "home.html";
+            window.location.href = "../pages/home.html";
         }
     })
     .catch(err => {
@@ -66,7 +66,7 @@ form.addEventListener("submit", function (e) {
 // google log in
 function handleCredentialResponse(response){
     const token= response.credential;
-    fetch("http://edu-sync-back-end--doniaafify615.repl.co/google-signin", {
+    fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-signin", {
     method:"post",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({token:token}),
@@ -75,7 +75,7 @@ function handleCredentialResponse(response){
     .then(data=>{
         if(data.success){
             localStorage.setItem("google_token",token);
-            window.location.href="/pages/home.html";
+            window.location.href="../pages/home.html";
         } else{
             alert(data.msg);
         }

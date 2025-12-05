@@ -90,7 +90,7 @@ form.addEventListener("submit", function (e) {
   submitBtn.disabled = true;
   submitBtn.textContent = "Signing up...";
 
-  fetch("https://edu-sync-back-end--doniaafify615.repl.co/signup", {
+  fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -118,7 +118,7 @@ form.addEventListener("submit", function (e) {
 if (data.success) {
         alert("Account created! Redirecting...");
         form.reset();
-        window.location.href = "home.html";
+        window.location.href = "../pages/home.html";
       }
     })
     .catch((err) => {
@@ -140,7 +140,7 @@ if (data.success) {
 function handleCredentialResponse(response) {
   const idToken = response.credential;
 
-  fetch("https://edu-sync-back-end--doniaafify615.repl.co/google-signin", {
+  fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-signin", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idToken }),
@@ -155,7 +155,7 @@ function handleCredentialResponse(response) {
 
       // Success
       alert("Logged in with Google! Redirecting...");
-      window.location.href = "home.html";
+      window.location.href = "../pages/home.html";
     })
     .catch((err) => {
       console.error("Google sign-in error:", err);
