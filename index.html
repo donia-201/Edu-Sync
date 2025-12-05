@@ -138,7 +138,7 @@
 
 function handleCredentialResponse(response) {
     const token = response.credential;
-    fetch("http://edu-sync-back-end--doniaafify615.repl.co/google-signin", {
+    fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: token })
