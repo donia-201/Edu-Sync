@@ -70,6 +70,7 @@
       <i class="fa-solid fa-eye icon"></i>
     </span>
   </div>
+  <span class="error" id="confirm-password-error"></span>
 </div>
     
     <div class="col-12">
@@ -145,7 +146,7 @@
             // Initialize Google Identity Services
             google.accounts.id.initialize({
                 client_id: "562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
-                callback: handleCredentialResponse
+                callback: handleCredentialResponse //error not defined
             });
         }
 
