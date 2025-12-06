@@ -138,12 +138,12 @@ if (data.success) {
 
 // GOOGLE SIGN-IN
 function handleCredentialResponse(response) {
-  const idToken = response.credential;
+  const token = response.credential;
 
   fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-signin", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken }),
+    body: JSON.stringify({ token: token }),
   })
     .then(async (res) => {
       const data = await res.json().catch(() => ({}));
@@ -154,11 +154,16 @@ function handleCredentialResponse(response) {
       }
 
       // Success
-      alert("Logged in with Google! Redirecting...");
-      window.location.href = "../pages/home.html";
+      if (data.success) {
+        localStorage.setItem("google_token", token);
+        alert("Logged in with Google! Redirecting...");
+        window.location.href = "../pages/home.html";
+      } else {
+        alert(data.msg || "Google sign-in failed.");
+      }
     })
     .catch((err) => {
       console.error("Google sign-in error:", err);
-      alert("Google login failed. Try again.");
+      alert("Google login failed. Please try again.");
     });
 }

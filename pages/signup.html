@@ -122,17 +122,6 @@
         <a href="../pages/login.html"> log in</a>
         </div>
         <div>
-    <div id="g_id_onload"
-    data-client_id="562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com"
-    data-callback="handleCredentialResponse">
-    </div>
-    <div id="g_id_onload"
-    data-client_id="562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com"
-    data-context="signin"
-    data-ux_mode="popup"
-    data-callback="handleCredentialResponse">
-</div>
-
     <button class="btn button-outline-primary g-id-signin"
     data-type="standard" onclick="GoogleLogin()">
         continue with 
@@ -153,19 +142,22 @@
 
     <script>
         window.onload=()=>{
-        let codeClient = google.accounts.oauth2.initCodeClient({
-    client_id: "562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
-    scope: "email profile openid",
-    callback: handleCredentialResponse
-});
-        google.accounts.id.initialize({
-            client_id:"562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
-            callback:handleCredentialResponse
-        });
+            // Initialize Google Identity Services
+            google.accounts.id.initialize({
+                client_id: "562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
+                callback: handleCredentialResponse
+            });
+        }
+
         function GoogleLogin(){
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+                console.error('Google Identity Services not loaded yet.');
+                alert("Google sign-in is loading. Please wait a moment and try again.");
+                return;
+            }
             google.accounts.id.prompt();
-        }}
-        </script>
+        }
+    </script>
     
 </body>
 </html>

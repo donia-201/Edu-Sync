@@ -65,19 +65,23 @@ form.addEventListener("submit", function (e) {
 
 // google log in
 function handleCredentialResponse(response){
-    const token= response.credential;
+    const token = response.credential;
     fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-signin", {
-    method:"post",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({token:token}),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token })
     })
-    .then(res=>res.json())
-    .then(data=>{
+    .then(res => res.json())
+    .then(data => {
         if(data.success){
-            localStorage.setItem("google_token",token);
-            window.location.href="../pages/home.html";
-        } else{
-            alert(data.msg);
+            localStorage.setItem("google_token", token);
+            window.location.href = "../pages/home.html";
+        } else {
+            alert(data.msg || "Google sign-in failed.");
         }
+    })
+    .catch(err => {
+        console.error("Google sign-in error:", err);
+        alert("Google login failed. Please try again.");
     });
 }
