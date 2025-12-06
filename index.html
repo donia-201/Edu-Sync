@@ -55,12 +55,7 @@
     data-client_id="562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com"
     data-callback="handleCredentialResponse">
     </div>
-<div id="g_id_onload"
-    data-client_id="562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com"
-    data-context="signin"
-    data-ux_mode="popup"
-    data-callback="handleCredentialResponse">
-</div>
+
 
     <button class="btn button-outline-primary g-id-signin"
     data-type="standard" id="google-login" >
@@ -174,7 +169,7 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.2 }); 
 
 document.getElementById("google-login").onclick = () => {
-    const client_id = "YOUR_GOOGLE_CLIENT_ID";
+    const client_id = "GOOGLE_CLIENT_ID";
     const redirect_uri = "https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-callback";
     const scope = "email profile openid";
     const response_type = "code";
