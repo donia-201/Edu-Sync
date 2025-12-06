@@ -51,7 +51,10 @@
     <button class="btn button-primary">
         <a class=" text-decoration-none" href="./pages/home.html">start your journey</a>
     </button>
-
+    <div id="g_id_onload"
+    data-client_id="562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com"
+    data-callback="handleCredentialResponse">
+    </div>
 <div id="g_id_onload"
     data-client_id="562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com"
     data-context="signin"
@@ -60,9 +63,9 @@
 </div>
 
     <button class="btn button-outline-primary g-id-signin"
-    data-type="standard" onclick="GoogleLogin()">
+    data-type="standard" id="google-login" >
         continue with 
-            <svg    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24"  style="display: inline;" >
+                <svg  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24"  style="display: inline;" >
         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
         <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
         <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
@@ -158,24 +161,28 @@ function handleCredentialResponse(response) {
     });
 }
 
-// Wait for Google script to load
-window.addEventListener("load", () => {
-    
-    // FIX: Now google is loaded correctly
-    window.codeClient = google.accounts.oauth2.initCodeClient({
-        client_id: "562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
-        scope: "email profile openid",
-        callback: handleCredentialResponse
-    });
-});
-
-function GoogleLogin() {
-    if (!window.codeClient) {
-        console.error("Google OAuth client not ready.");
-        return;
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, index) => {  
+    if (entry.isIntersecting) {
+    entry.target.classList.remove('hidden');  
+    entry.target.classList.add('show');
+    } else {
+    entry.target.classList.remove('show');
+    entry.target.classList.add('hidden');
     }
-    window.codeClient.requestCode();
-}
+    });
+}, { threshold: 0.2 }); 
+
+document.getElementById("google-login").onclick = () => {
+    const client_id = "YOUR_GOOGLE_CLIENT_ID";
+    const redirect_uri = "https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-callback";
+    const scope = "email profile openid";
+    const response_type = "code";
+
+    const auth_url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=${response_type}&scope=${scope}`;
+
+    window.location.href = auth_url;
+};
 </script>
 
 </body>
