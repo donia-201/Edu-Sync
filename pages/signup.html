@@ -147,8 +147,12 @@
         </div>
 
     </section>
+      <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="../js/signup.js"></script>
+    <script src="../js/theme.js"></script>
 
     <script>
+        window.onload=()=>{
         let codeClient = google.accounts.oauth2.initCodeClient({
     client_id: "562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
     scope: "email profile openid",
@@ -160,10 +164,8 @@
         });
         function GoogleLogin(){
             google.accounts.id.prompt();
-        }
+        }}
         </script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="../js/signup.js"></script>
-    <script src="../js/theme.js"></script>
+    
 </body>
 </html>

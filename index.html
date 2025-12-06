@@ -137,8 +137,12 @@
         <footer>
         </footer>
     </main>
-<script>
 
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="./js/main.js"></script>
+    <script src="./js/bootstrap.bundle.min.js"></script>
+<script>
+    window.onload=()=>{
 function handleCredentialResponse(response) {
     const token = response.credential;
     fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-signin", {
@@ -185,11 +189,9 @@ function GoogleLogin() {
       return;
     }
     codeClient.requestCode();
-}
+}}
 </script>
 
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="./js/main.js"></script>
-    <script src="./js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
