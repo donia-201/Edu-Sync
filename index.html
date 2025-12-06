@@ -45,7 +45,7 @@
                     <button class="btn button-primary">
                         <a class=" text-decoration-none" href="./pages/home.html">start your journey</a>
                     </button>
-                    <button class="btn button-outline-primary g-id-signin" data-type="standard" onclick="GoogleLogin()">
+                    <button class="btn button-outline-primary g-id-signin" data-type="standard" onclick="GoogleRedirect()">
                         continue with
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24"
                             style="display: inline;">
@@ -130,22 +130,24 @@
         </footer>
     </main>
 
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="./js/main.js"></script>
-    <script src="./js/bootstrap.bundle.min.js"></script>
-    <script>
-window.onload = () => {
-    // Initialize Google Identity Services safely
-    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-        google.accounts.id.initialize({
-            client_id: "562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
-            callback: handleCredentialResponse
-        });
-    } else {
-        console.warn("Google Identity Services not loaded yet.");
-    }
+<script src="./js/main.js"></script>
+<script src="./js/bootstrap.bundle.min.js"></script>
 
-    // Intersection Observer for feature cards
+<script>
+function GoogleRedirect() {
+    window.location.href =
+      "https://accounts.google.com/o/oauth2/v2/auth?" +
+      new URLSearchParams({
+        client_id: "562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
+        redirect_uri: "https://edu-sync-back-end-production.up.railway.app/google-callback",
+        response_type: "code",
+        scope: "email profile",
+        access_type: "online",
+        prompt: "select_account"
+      });
+}
+
+window.onload = () => {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             if (entry.isIntersecting) {
@@ -161,38 +163,7 @@ window.onload = () => {
     document.querySelectorAll('.feature-card').forEach(card => {
         observer.observe(card);
     });
-}
-
-function handleCredentialResponse(response) {
-    const token = response.credential;
-    fetch("https://edu-sync-back-end-production.up.railway.app/google-signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            localStorage.setItem("google_token", token);
-            window.location.href = "./pages/home.html";
-        } else {
-            alert(data.msg || "Google sign-in failed.");
-        }
-    })
-    .catch(err => {
-        console.error("Google sign-in error:", err);
-        alert("Google login failed. Please try again.");
-    });
-}
-
-function GoogleLogin() {
-    if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
-        console.error('Google Identity Services not loaded yet.');
-        alert("Google sign-in is loading. Please wait a moment and try again.");
-        return;
-    }
-    google.accounts.id.prompt();
-}
+};
 </script>
 
 

@@ -33,7 +33,7 @@ form.addEventListener("submit", function (e) {
     submitBtn.textContent = "Logging in...";
 
     // Send data to backend
-    fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/login", {
+    fetch("https://edu-sync-back-end-production.up.railway.app/login", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
@@ -41,13 +41,21 @@ form.addEventListener("submit", function (e) {
             password: passwordField.value.trim()
         })
     })
-    .then(res => {
-        if (res.status === 401) return res.json(); // handle invalid login
-        return res.json();
+    .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        return { status: res.status, data };
     })
-    .then(data => {
-        if (!data.success) {
-            userError.textContent = data.msg || "Invalid email/username or password.";
+    .then(result => {
+
+        if (result.status === 401) {
+            userError.textContent = result.data.msg || "Invalid email/username or password.";
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Login";
+            return;
+        }
+
+        if (!result.data.success) {
+            userError.textContent = result.data.msg || "Login failed.";
             submitBtn.disabled = false;
             submitBtn.textContent = "Login";
         } else {
@@ -63,25 +71,17 @@ form.addEventListener("submit", function (e) {
     });
 });
 
-// google log in
-function handleCredentialResponse(response){
-    const token = response.credential;
-    fetch("https://b72a9bfe-19ab-4e55-aa04-388ba10e8bc9-00-kxyqxw13s269.worf.replit.dev/google-signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.success){
-            localStorage.setItem("google_token", token);
-            window.location.href = "../pages/home.html";
-        } else {
-            alert(data.msg || "Google sign-in failed.");
-        }
-    })
-    .catch(err => {
-        console.error("Google sign-in error:", err);
-        alert("Google login failed. Please try again.");
-    });
+
+// GOOGLE LOGIN — NEW REDIRECT FLOW
+function googleRedirectLogin() {
+    window.location.href =
+      "https://accounts.google.com/o/oauth2/v2/auth?" +
+      new URLSearchParams({
+        client_id: "YOUR_GOOGLE_CLIENT_ID_HERE",
+        redirect_uri:
+          "https://edu-sync-back-end-production.up.railway.app/google-callback",
+        response_type: "code",
+        scope: "email profile",
+        access_type: "online"
+      });
 }
