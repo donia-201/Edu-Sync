@@ -11,141 +11,137 @@ const passError = document.getElementById("password-error");
 const confirmPassError = document.getElementById("confirm-password-error");
 
 function setupToggle(inputId, toggleId) {
-  const input = document.getElementById(inputId);
-  const toggle = document.getElementById(toggleId);
-  if (!toggle) return;
-  const icon = toggle.querySelector("i");
+    const input = document.getElementById(inputId);
+    const toggle = document.getElementById(toggleId);
+    if (!toggle) return;
+    const icon = toggle.querySelector("i");
 
-  toggle.addEventListener("click", () => {
-    const type = input.type === "password" ? "text" : "password";
-    input.type = type;
-    icon.classList.toggle("fa-eye");
-    icon.classList.toggle("fa-eye-slash");
-  });
+    toggle.addEventListener("click", () => {
+        const type = input.type === "password" ? "text" : "password";
+        input.type = type;
+        icon.classList.toggle("fa-eye");
+        icon.classList.toggle("fa-eye-slash");
+    });
 }
 
-// Toggle Other Field
 function toggleOtherField() {
-  const select = document.getElementById("sfield");
-  const otherField = document.getElementById("OtherField");
-  otherField.style.display = select.value === "Other" ? "block" : "none";
+    const select = document.getElementById("sfield");
+    const otherField = document.getElementById("OtherField");
+    otherField.style.display = select.value === "Other" ? "block" : "none";
 }
 document.getElementById("OtherField").style.display = "none";
 
 setupToggle("password", "togglePassword");
 setupToggle("pass2", "togglePassword2");
 
-// Regex
 const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-const passwordRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])[A-Za-z\d\W]{8,}$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])[A-Za-z\d\W]{8,}$/;
 
 form.addEventListener("submit", function (e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  uNameError.textContent = "";
-  emailError.textContent = "";
-  passError.textContent = "";
-  confirmPassError.textContent = "";
+    uNameError.textContent = "";
+    emailError.textContent = "";
+    passError.textContent = "";
+    confirmPassError.textContent = "";
 
-  let valid = true;
+    let valid = true;
 
-  if (!user_Name.value.trim()) {
-    uNameError.textContent = "Username is required.";
-    valid = false;
-  } else if (user_Name.value.trim().length < 3) {
-    uNameError.textContent = "Username must be at least 3 characters.";
-    valid = false;
-  }
+    if (!user_Name.value.trim()) {
+        uNameError.textContent = "Username is required.";
+        valid = false;
+    } else if (user_Name.value.trim().length < 3) {
+        uNameError.textContent = "Username must be at least 3 characters.";
+        valid = false;
+    }
 
-  if (!email.value.trim()) {
-    emailError.textContent = "Email is required.";
-    valid = false;
-  } else if (!emailRegex.test(email.value.trim())) {
-    emailError.textContent = "Enter a valid email.";
-    valid = false;
-  }
+    if (!email.value.trim()) {
+        emailError.textContent = "Email is required.";
+        valid = false;
+    } else if (!emailRegex.test(email.value.trim())) {
+        emailError.textContent = "Enter a valid email.";
+        valid = false;
+    }
 
-  if (!password.value.trim()) {
-    passError.textContent = "Password is required.";
-    valid = false;
-  } else if (!passwordRegex.test(password.value.trim())) {
-    passError.textContent =
-      "Password must be 8+ chars and contain upper, lower, number, symbol.";
-    valid = false;
-  }
+    if (!password.value.trim()) {
+        passError.textContent = "Password is required.";
+        valid = false;
+    } else if (!passwordRegex.test(password.value.trim())) {
+        passError.textContent = "Password must be 8+ chars and contain upper, lower, number, symbol.";
+        valid = false;
+    }
 
-  // Confirm password
-  if (!confirmPassword.value.trim()) {
-    confirmPassError.textContent = "Please confirm your password.";
-    valid = false;
-  } else if (confirmPassword.value.trim() !== password.value.trim()) {
-    confirmPassError.textContent = "Passwords do not match.";
-    valid = false;
-  }
+    if (!confirmPassword.value.trim()) {
+        confirmPassError.textContent = "Please confirm your password.";
+        valid = false;
+    } else if (confirmPassword.value.trim() !== password.value.trim()) {
+        confirmPassError.textContent = "Passwords do not match.";
+        valid = false;
+    }
 
-  if (!valid) return;
+    if (!valid) return;
 
-  const submitBtn = form.querySelector('button[type="submit"]');
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Signing up...";
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Signing up...";
 
-  fetch("https://edu-sync-back-end-production.up.railway.app/signup", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: user_Name.value.trim(),
-      email: email.value.trim(),
-      password: password.value.trim(),
-    }),
-  })
-    .then(async (res) => {
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const msg = body.msg || `Server error: ${res.status}`;
-        if (msg.includes("Email")) emailError.textContent = msg;
-        else if (msg.includes("Username")) uNameError.textContent = msg;
-        else alert(msg);
-
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Sign Up";
-        throw new Error(msg);
-      }
-      return body;
+    fetch("https://edu-sync-back-end-production.up.railway.app/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            username: user_Name.value.trim(),
+            email: email.value.trim(),
+            password: password.value.trim(),
+        }),
     })
-    .then((data) => {
+        .then(async (res) => {
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const msg = body.msg || `Server error: ${res.status}`;
+                if (msg.includes("Email")) emailError.textContent = msg;
+                else if (msg.includes("Username")) uNameError.textContent = msg;
+                else alert(msg);
 
-      if (data.success) {
-        alert("Account created! Redirecting...");
-        form.reset();
-        window.location.href = "../pages/home.html";
-      }
-    })
-    .catch((err) => {
-      console.error(err);
-      if (
-        !emailError.textContent &&
-        !uNameError.textContent &&
-        !passError.textContent &&
-        !confirmPassError.textContent
-      ) {
-        alert("Something went wrong. Please try again.");
-      }
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Sign Up";
-    });
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Sign Up";
+                throw new Error(msg);
+            }
+            return body;
+        })
+        .then((data) => {
+            if (data.success) {
+                localStorage.setItem("authToken", data.token);
+                localStorage.setItem("user", JSON.stringify(data.user));
+
+                alert("Account created! Redirecting...");
+                form.reset();
+                window.location.href = "../pages/home.html";
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            if (
+                !emailError.textContent &&
+                !uNameError.textContent &&
+                !passError.textContent &&
+                !confirmPassError.textContent
+            ) {
+                alert("Something went wrong. Please try again.");
+            }
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Sign Up";
+        });
 });
 
-// GOOGLE SIGN-IN — NEW REDIRECT FLOW
-function googleRedirect() {
-  window.location.href =
-    "https://accounts.google.com/o/oauth2/v2/auth?" +
-    new URLSearchParams({
-      client_id: "YOUR_GOOGLE_CLIENT_ID_HERE",
-      redirect_uri:
-        "https://edu-sync-back-end-production.up.railway.app/google-callback",
-      response_type: "code",
-      scope: "email profile",
-      access_type: "online",
-    });
+function GoogleRedirect() {
+    window.location.href =
+        "https://accounts.google.com/o/oauth2/v2/auth?" +
+        new URLSearchParams({
+            client_id: "562682529890-tq8hjqqtml1kp2oop25i6j7gheiu89h1.apps.googleusercontent.com",
+            redirect_uri: "https://edu-sync-back-end-production.up.railway.app/google-callback",
+            response_type: "code",
+            scope: "email profile",
+            access_type: "online",
+            prompt: "select_account"
+        });
 }

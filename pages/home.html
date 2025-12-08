@@ -3,86 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduSync</title>
+    <title>EduSync - Home</title>
     <link rel="stylesheet" href="../assets/home.css">
     <link rel="stylesheet" href="../assets/bootstrap.min.css">
     <link rel="stylesheet" href="../assets/all.min.css">
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="../assets/theme.css">
-    <link
-    href="https://fonts.googleapis.com/css2?family=Caveat+Brush&display=swap"
-    rel="stylesheet"
-    />
-    <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap"
-    rel="stylesheet"
-    />
-    <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-/>
-<link rel="shortcut icon" href="../imgs/education.png" type="image/x-icon">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="shortcut icon" href="../imgs/education.png" type="image/x-icon">
 </head>
 <body>
-    <nav class="navbar   py-3">
-        <div class="container py-3 ">
-                <span class="navbar-brand title2 mb-0 " >EduSync</span>
+    <nav class="navbar py-3">
+        <div class="container py-3">
+            <span class="navbar-brand title2 mb-0">EduSync</span>
             <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
-            <a class="nav-link px-2 " href="../pages/home.html"><i class="fa-solid fa-house"></i></a>
-            <a class="nav-link px-2 " href="../pages/pomotimer.html"><i class="fa-solid fa-stopwatch-20"></i></a>
-            <a class="nav-link px-2 " href="../pages/dashboard.html"> <i class="fa-solid fa-chart-line"></i></a>
-            <button class="btn button-nav ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#myside-bar">
-            <i class="fas fa-bars"></i>
-            </button>
-            <button class="theme-toggle-btn  ms-3">
-                <i class="fas fa-sun"></i>
-            </button>
+                <a class="nav-link px-2" href="../pages/home.html"><i class="fa-solid fa-house"></i></a>
+                <a class="nav-link px-2" href="../pages/pomotimer.html"><i class="fa-solid fa-stopwatch-20"></i></a>
+                <a class="nav-link px-2" href="../pages/dashboard.html"><i class="fa-solid fa-chart-line"></i></a>
+                <button class="btn button-nav ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#myside-bar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <button class="theme-toggle-btn ms-3">
+                    <i class="fas fa-sun"></i>
+                </button>
             </div>
         </div>
-        </nav>
+    </nav>
+
     <main>
         <section>
-            
+            <div class="container py-5">
+                <h2 id="welcome-message">Welcome!</h2>
+            </div>
         </section>
     </main>
-    <aside>
-    <div class="offcanvas offcanvas-start side-body" tabindex="-1" id="myside-bar">
-        <div class="offcanvas-header justify-content-end">
-            <button class="btn-close p-3" type="button" data-bs-dismiss="offcanvas">
-            </button>
-        </div>
-    <div class="offcanvas-body side-body d-flex flex-column ps-3">
 
-    <ul class="list-unstyled mt-3">
-    <li>    <i class="fa-solid fa-arrow-right-to-bracket"></i>
-            <a href="../pages/signup.html"  rel="noopener noreferrer">create Account</a></li>
-        <li>    <i class="fa-solid fa-stopwatch-20"></i>
-                <a href="../pages/pomotimer.html"  rel="noopener noreferrer">pomodoro timer </a></li>
-        <li> 
-                <i class="fas fa-comments "></i>
-            <a href="../pages/aichat.html"  rel="noopener noreferrer"> AI chat</a></li>
-        <li> <i class="fa-solid fa-chart-line"></i> 
-            <a href="../pages/dashboard.html"  rel="noopener noreferrer"> dashboard</a></li>
-        <li> <a href="../pages/events.html"  rel="noopener noreferrer">Events</a></li>
-        <li>    <i class="fa-solid fa-bell"></i> 
-            <a href="../pages/notification.html"  rel="noopener noreferrer">notification</a></li>
-        <li>    <i class="fa-solid fa-note-sticky"></i> 
-            <a href="../pages/notes.html"  rel="noopener noreferrer">Notes</a></li>
-        <li>    <i class="fa-regular fa-calendar"></i>
-            <a href="../pages/calendar.html"  rel="noopener noreferrer">Calendar</a></li>
-        <li> <i class="fa-solid fa-gear"></i> 
-            <a href="../pages/setting.html"  rel="noopener noreferrer">Setttings</a></li>
-        <li>    <i class="fa-solid fa-address-book"></i> 
-            <a href="../pages/contact.html " rel="noopener noreferrer">contact us</a></li>
-        </ul>
-    </div>
-    </div>
+    <aside>
+        <div class="offcanvas offcanvas-start side-body" tabindex="-1" id="myside-bar">
+            <div class="offcanvas-header justify-content-end">
+                <button class="btn-close p-3" type="button" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body side-body d-flex flex-column ps-3">
+                <ul class="list-unstyled mt-3">
+                    <li><i class="fas fa-user-plus"></i>
+                        <a href="../pages/signup.html">Create Account</a></li>
+                    <li><i class="fa-solid fa-stopwatch-20"></i>
+                        <a href="../pages/pomotimer.html">Pomodoro Timer</a></li>
+                    <li><i class="fas fa-comments"></i>
+                        <a href="../pages/aichat.html">AI Chat</a></li>
+                    <li><i class="fa-solid fa-chart-line"></i>
+                        <a href="../pages/dashboard.html">Dashboard</a></li>
+                    <li><i class="fa-solid fa-bell"></i>
+                        <a href="../pages/notification.html">Notification</a></li>
+                    <li><i class="fa-solid fa-note-sticky"></i>
+                        <a href="../pages/notes.html">Notes</a></li>
+                    <li><i class="fa-regular fa-calendar"></i>
+                        <a href="../pages/calendar.html">Calendar</a></li>
+                    <li><i class="fa-solid fa-gear"></i>
+                        <a href="../pages/setting.html">Settings</a></li>
+                    <li><i class="fa-solid fa-address-book"></i>
+                        <a href="../pages/contact.html">Contact Us</a></li>
+                    <li><i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        <a href="#" id="logout-btn">Log Out</a></li>
+                </ul>
+            </div>
+        </div>
     </aside>
 
-
-        <script src="../js/bootstrap.bundle.min.js"></script>
-        <script src="../js/theme.js"></script>
-        <script src="../js/main.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/home.js"></script>
 </body>
 </html>
