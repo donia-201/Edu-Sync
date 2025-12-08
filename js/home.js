@@ -1,4 +1,4 @@
-const YOUTUBE_API_KEY = "AIzaSyB2FSNyNdtPEL9nfd103TAaTAZA-jwUUVg"; 
+const YOUTUBE_API_KEY = "API_KEY"; 
 
 const STUDY_FIELD_KEYWORDS = {
     "Architecture": ["architecture tutorial", "architectural design", "building design"],
