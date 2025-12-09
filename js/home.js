@@ -42,7 +42,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     currentUser = user;
 
     try {
-        const keyResponse = await fetch("https://edu-sync-back-end-production.up.railway.app/api/API-KEY");
+        const keyResponse = await fetch("https://edu-sync-back-end-production.up.railway.app/api/youtube-key");
         const keyData = await keyResponse.json();
         if (keyData.success) {
             YOUTUBE_API_KEY = keyData.key;
@@ -50,7 +50,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             console.error("Failed to get YouTube API Key");
         }
     } catch (err) {
-        console.error("Error fetching YouTube API Key:", err);
+        console.error("Error fetching Youtube API KEY" , err)
     }
 
     // عرض رسالة ترحيب
@@ -58,11 +58,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     const studyFieldMsg = document.getElementById("study-field-message");
     
     if (welcomeMsg && user.username) {
-        welcomeMsg.textContent = `Welcome back, ${user.username}! <br> Let's study together`;
+        welcomeMsg.textContent = `Welcome back, ${user.username}! `;
     }
 
     if (studyFieldMsg && user.study_field) {
-        studyFieldMsg.textContent = `Let's explore ${user.study_field} together`;
+        studyFieldMsg.textContent = `Let's Study ${user.study_field} together`;
     }
 
     // التحقق من صلاحية الـ session
