@@ -91,7 +91,6 @@ form.addEventListener("submit", function (e) {
 
     if (!valid) return;
 
-    // جلب Study Field
     const studyField = document.getElementById("sfield").value;
     const otherField = document.getElementById("OtherField").value.trim();
     const finalStudyField = studyField === "Other" ? otherField : studyField;

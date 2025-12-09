@@ -1,27 +1,4 @@
-const YOUTUBE_API_KEY = "API_KEY"; 
-
-const STUDY_FIELD_KEYWORDS = {
-    "Architecture": ["architecture tutorial", "architectural design", "building design"],
-    "AI": ["artificial intelligence course", "machine learning tutorial", "deep learning"],
-    "Biology": ["biology lecture", "molecular biology", "genetics tutorial"],
-    "Business Administration": ["business management", "MBA course", "entrepreneurship"],
-    "Chemistry": ["chemistry lecture", "organic chemistry", "chemistry tutorial"],
-    "Computer science": ["computer science course", "programming tutorial", "data structures"],
-    "Cyber security": ["cybersecurity tutorial", "ethical hacking", "network security"],
-    "Data science": ["data science course", "python data analysis", "statistics tutorial"],
-    "Education": ["teaching methods", "educational psychology", "pedagogy"],
-    "Engineering": ["engineering tutorial", "mechanical engineering", "civil engineering"],
-    "Graphic Design": ["graphic design tutorial", "adobe photoshop", "design principles"],
-    "Law": ["law lecture", "legal studies", "constitutional law"],
-    "Marketing": ["digital marketing", "marketing strategy", "social media marketing"],
-    "Mathematics": ["mathematics course", "calculus tutorial", "algebra"],
-    "Medicine": ["medical lecture", "anatomy tutorial", "physiology course"],
-    "Pharmacy": ["pharmacy course", "pharmacology", "pharmaceutical sciences"],
-    "Physics": ["physics lecture", "quantum physics", "physics tutorial"],
-    "Psychology": ["psychology course", "cognitive psychology", "behavioral psychology"],
-    "Static": ["statistics course", "statistical analysis", "probability theory"]
-};
-
+// ==================== إعدادات عامة ====================
 let currentUser = null;
 
 // ==================== التحقق من تسجيل الدخول ====================
@@ -37,10 +14,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = user;
 
-    // عرض رسالة ترحيب
+    // رسائل ترحيب
     const welcomeMsg = document.getElementById("welcome-message");
     const studyFieldMsg = document.getElementById("study-field-message");
-    
+
     if (welcomeMsg && user.username) {
         welcomeMsg.textContent = `Welcome back, ${user.username}! 🎉`;
     }
@@ -54,69 +31,100 @@ window.addEventListener("DOMContentLoaded", async () => {
         const response = await fetch("https://edu-sync-back-end-production.up.railway.app/verify-session", {
             headers: { "Authorization": `Bearer ${token}` }
         });
-        const data = await response.json();
 
+        if (!response.ok) {
+            throw new Error("Session invalid");
+        }
+
+        const data = await response.json();
         if (!data.success) {
-            alert("Your session has expired. Please login again.");
-            localStorage.removeItem("authToken");
-            localStorage.removeItem("user");
-            window.location.href = "../pages/login.html";
-            return;
+            throw new Error("Session expired");
         }
     } catch (err) {
         console.error("Session verification error:", err);
+        alert("Your session has expired. Please login again.");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+        window.location.href = "../pages/login.html";
+        return;
     }
 
-    // تحميل المحتوى الموصى به
+    // تحميل المحتوى
     await loadRecommendedContent();
 
-    // Search functionality
+    // الإعداد للبحث
     setupSearch();
 });
 
-// ==================== تحميل المحتوى الموصى به ====================
-async function loadRecommendedContent() {
-    const studyField = currentUser.study_field || "Computer science";
-    const keywords = STUDY_FIELD_KEYWORDS[studyField] || ["tutorial", "course", "lecture"];
-    
-    const container = document.getElementById("recommended-playlists");
-    container.innerHTML = "";
-
-    // جلب videos لكل keyword
-    for (const keyword of keywords) {
-        try {
-            const videos = await searchYouTube(keyword, 6);
-            if (videos.length > 0) {
-                const section = createPlaylistSection(keyword, videos);
-                container.appendChild(section);
-            }
-        } catch (error) {
-            console.error(`Error loading ${keyword}:`, error);
-        }
-    }
-
-    if (container.children.length === 0) {
-        container.innerHTML = '<div class="no-results">No recommended content found.</div>';
-    }
-}
-
-// ==================== البحث في YouTube ====================
+// ==================== البحث في YouTube عبر الـ Backend ====================
 async function searchYouTube(query, maxResults = 12) {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&key=${YOUTUBE_API_KEY}`;
-    
     try {
+        console.log("Searching backend for:", query);
+
+        const url = `https://edu-sync-back-end-production.up.railway.app/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}`;
+
         const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data.error) {
-            console.error("YouTube API Error:", data.error);
+
+        if (!response.ok) {
+            console.error("Backend HTTP Error:", response.status);
             return [];
         }
+
+        const data = await response.json();
+        console.log("Backend YouTube response:", data);
 
         return data.items || [];
     } catch (error) {
         console.error("Search error:", error);
         return [];
+    }
+}
+
+// ==================== Study Field Keywords ====================
+const STUDY_FIELD_KEYWORDS = {
+    "architecture": ["architecture tutorial", "architectural design", "building design"],
+    "ai": ["artificial intelligence course", "machine learning tutorial", "deep learning"],
+    "biology": ["biology lecture", "molecular biology", "genetics tutorial"],
+    "business administration": ["business management", "MBA course", "entrepreneurship"],
+    "chemistry": ["chemistry lecture", "organic chemistry", "chemistry tutorial"],
+    "computer science": ["computer science course", "programming tutorial", "data structures"],
+    "cyber security": ["cybersecurity tutorial", "ethical hacking", "network security"],
+    "data science": ["data science course", "python data analysis", "statistics tutorial"],
+    "education": ["teaching methods", "educational psychology", "pedagogy"],
+    "engineering": ["engineering tutorial", "mechanical engineering", "civil engineering"],
+    "graphic design": ["graphic design tutorial", "adobe photoshop", "design principles"],
+    "law": ["law lecture", "legal studies", "constitutional law"],
+    "marketing": ["digital marketing", "marketing strategy", "social media marketing"],
+    "mathematics": ["mathematics course", "calculus tutorial", "algebra"],
+    "medicine": ["medical lecture", "anatomy tutorial", "physiology course"],
+    "pharmacy": ["pharmacy course", "pharmacology", "pharmaceutical sciences"],
+    "physics": ["physics lecture", "quantum physics", "physics tutorial"],
+    "psychology": ["psychology course", "cognitive psychology", "behavioral psychology"],
+    "statistics": ["statistics course", "statistical analysis", "probability theory"],
+    "frontend": ["frontend development", "html css javascript", "react tutorial", "web design"],
+    "backend": ["backend development", "node.js tutorial", "express js course", "databases mysql mongodb"]
+};
+
+// ==================== تحميل المحتوى الموصى به ====================
+async function loadRecommendedContent() {
+    const studyField = (currentUser.study_field || "computer science").toLowerCase();
+    const keywords = STUDY_FIELD_KEYWORDS[studyField] || ["tutorial", "course", "lecture"];
+
+    const container = document.getElementById("recommended-playlists");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    for (let keyword of keywords) {
+        const videos = await searchYouTube(keyword, 6);
+
+        if (videos.length > 0) {
+            container.appendChild(createPlaylistSection(keyword, videos));
+        }
+    }
+
+    if (container.children.length === 0) {
+        container.innerHTML = `<div class="no-results">No recommended content found.</div>`;
     }
 }
 
@@ -127,61 +135,60 @@ function createPlaylistSection(title, videos) {
 
     const titleEl = document.createElement("h2");
     titleEl.className = "playlist-title";
-    titleEl.textContent = title.charAt(0).toUpperCase() + title.slice(1);
+    titleEl.textContent = title;
 
     const grid = document.createElement("div");
     grid.className = "video-grid";
 
     videos.forEach(video => {
-        const card = createVideoCard(video);
-        grid.appendChild(card);
+        grid.appendChild(createVideoCard(video));
     });
 
     section.appendChild(titleEl);
     section.appendChild(grid);
+
     return section;
 }
 
 // ==================== إنشاء Video Card ====================
 function createVideoCard(video) {
-    const videoId = video.id.videoId;
+    const videoId = video.id;
     const snippet = video.snippet;
-    
+    const thumbnail = snippet.thumbnails?.high?.url;
+
     const card = document.createElement("div");
     card.className = "video-card";
 
-    const thumbnail = snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url;
-    
     card.innerHTML = `
-        <img src="${thumbnail}" alt="${snippet.title}" class="video-thumbnail">
+        <img src="${thumbnail}" class="video-thumbnail">
         <div class="video-info">
             <div class="video-title">${snippet.title}</div>
             <div class="video-channel">${snippet.channelTitle}</div>
             <div class="video-actions">
-                <button class="btn-watch" onclick="watchVideo('${videoId}')">
-                    <i class="fas fa-play"></i> Watch
-                </button>
-                <button class="btn-save" onclick="saveVideo('${videoId}', '${snippet.title.replace(/'/g, "\\'")}', '${thumbnail}', '${snippet.channelTitle}')">
-                    <i class="fas fa-bookmark"></i> Save
-                </button>
+                <button class="btn-watch">Watch</button>
+                <button class="btn-save">Save</button>
             </div>
         </div>
     `;
 
-    return card;
-}
+    // watch
+    card.querySelector(".btn-watch").addEventListener("click", () => {
+        window.open(`https://www.youtube.com/watch?v=${videoId}`, "_blank");
+    });
 
-// ==================== Watch Video ====================
-function watchVideo(videoId) {
-    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+    // save
+    card.querySelector(".btn-save").addEventListener("click", () => {
+        saveVideo(videoId, snippet.title, thumbnail, snippet.channelTitle);
+    });
+
+    return card;
 }
 
 // ==================== Save Video ====================
 function saveVideo(videoId, title, thumbnail, channel) {
     let savedVideos = JSON.parse(localStorage.getItem("savedVideos") || "[]");
-    
-    // Check if already saved
-    if (savedVideos.find(v => v.videoId === videoId)) {
+
+    if (savedVideos.some(v => v.videoId === videoId)) {
         alert("Video already saved!");
         return;
     }
@@ -195,59 +202,51 @@ function saveVideo(videoId, title, thumbnail, channel) {
     });
 
     localStorage.setItem("savedVideos", JSON.stringify(savedVideos));
-    alert("Video saved successfully! ✓");
+
+    alert("Video saved successfully!");
 }
 
-// ==================== Setup Search ====================
+// ==================== Search Setup ====================
 function setupSearch() {
     const searchInput = document.getElementById("search-input");
     const searchBtn = document.getElementById("search-btn");
     const searchResults = document.getElementById("search-results");
     const searchVideos = document.getElementById("search-videos");
 
-    searchBtn.addEventListener("click", performSearch);
-    searchInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") performSearch();
+    if (!searchInput || !searchBtn) return;
+
+    searchBtn.addEventListener("click", doSearch);
+    searchInput.addEventListener("keypress", e => {
+        if (e.key === "Enter") doSearch();
     });
 
-    async function performSearch() {
+    async function doSearch() {
         const query = searchInput.value.trim();
         if (!query) return;
 
-        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
-        searchBtn.disabled = true;
+        searchVideos.innerHTML = `<div class="loading">Searching...</div>`;
+        searchResults.style.display = "block";
 
-        try {
-            const videos = await searchYouTube(query, 12);
-            
-            searchVideos.innerHTML = "";
-            
-            if (videos.length === 0) {
-                searchVideos.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
-            } else {
-                videos.forEach(video => {
-                    const card = createVideoCard(video);
-                    searchVideos.appendChild(card);
-                });
-            }
+        const videos = await searchYouTube(query, 12);
 
-            searchResults.style.display = "block";
-            searchResults.scrollIntoView({ behavior: "smooth" });
-        } catch (error) {
-            console.error("Search error:", error);
-            alert("Search failed. Please try again.");
-        } finally {
-            searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
-            searchBtn.disabled = false;
+        searchVideos.innerHTML = "";
+
+        if (videos.length === 0) {
+            searchVideos.innerHTML = `<div class="no-results">No results found</div>`;
+            return;
         }
+
+        videos.forEach(v => {
+            searchVideos.appendChild(createVideoCard(v));
+        });
     }
 }
 
-// ==================== Logout Function ====================
+// ==================== Logout ====================
 const logoutBtn = document.getElementById("logout-btn");
 
 if (logoutBtn) {
-    logoutBtn.addEventListener("click", async (e) => {
+    logoutBtn.addEventListener("click", async e => {
         e.preventDefault();
 
         const confirmLogout = confirm("Are you sure you want to log out?");
@@ -267,8 +266,7 @@ if (logoutBtn) {
             console.error("Logout error:", err);
         }
 
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("user");
+        localStorage.clear();
         alert("Logged out successfully!");
         window.location.href = "../index.html";
     });
