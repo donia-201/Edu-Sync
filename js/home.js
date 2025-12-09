@@ -43,7 +43,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     // جلب YouTube API Key من Backend
     try {
-        const keyResponse = await fetch("https://edu-sync-back-end-production.up.railway.app/api/youtube-key");
+        const keyResponse = await fetch("https://edu-sync-back-end-production.up.railway.app/api/API-KEY");
         const keyData = await keyResponse.json();
         if (keyData.success) {
             YOUTUBE_API_KEY = keyData.key;
@@ -59,7 +59,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const studyFieldMsg = document.getElementById("study-field-message");
     
     if (welcomeMsg && user.username) {
-        welcomeMsg.textContent = `Welcome back, ${user.username}! 🎉`;
+        welcomeMsg.textContent = `Welcome back, ${user.username}! `;
     }
 
     if (studyFieldMsg && user.study_field) {

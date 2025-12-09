@@ -36,9 +36,13 @@ body{
 visibility: visible !important;
 }
 
-.btn-close{
-    background-color: var(--color-bg-light) !important;
+.button-close{
+    background-color: transparent;
     color: var(--color-text-main) !important;
+    border: none;
+}
+.button-close:hover ,.button-close:active{
+    border: 1px solid  var(--color-primary-dark);
 }
 .side-body{
     background-color: var(--color-bg-light) !important;
@@ -46,7 +50,6 @@ visibility: visible !important;
     font-family: var(--font-body);
     font-size: 1.2rem;
     line-height: 2;
-    margin-left: 16px;
 }
 
 .pic{
