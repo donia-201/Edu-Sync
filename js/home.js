@@ -1,32 +1,37 @@
-// YouTube API Key - سيتم جلبه من الـ Backend
-let YOUTUBE_API_KEY = "";
-
-// Study Field Keywords للبحث
+// home.js (frontend)
+// ==================== إعدادات عامة ====================
+const BACKEND_BASE = "https://edu-sync-back-end-production.up.railway.app"; // keep as is
+// Study Field Keywords (original labels kept but lookup normalized)
 const STUDY_FIELD_KEYWORDS = {
-    "Architecture": ["architecture tutorial", "architectural design", "building design"],
-    "AI": ["artificial intelligence course", "machine learning tutorial", "deep learning"],
-    "Biology": ["biology lecture", "molecular biology", "genetics tutorial"],
-    "Business Administration": ["business management", "MBA course", "entrepreneurship"],
-    "Chemistry": ["chemistry lecture", "organic chemistry", "chemistry tutorial"],
-    "Computer science": ["computer science course", "programming tutorial", "data structures"],
-    "Cyber security": ["cybersecurity tutorial", "ethical hacking", "network security"],
-    "Data science": ["data science course", "python data analysis", "statistics tutorial"],
-    "Education": ["teaching methods", "educational psychology", "pedagogy"],
-    "Engineering": ["engineering tutorial", "mechanical engineering", "civil engineering"],
-    "Graphic Design": ["graphic design tutorial", "adobe photoshop", "design principles"],
-    "Law": ["law lecture", "legal studies", "constitutional law"],
-    "Marketing": ["digital marketing", "marketing strategy", "social media marketing"],
-    "Mathematics": ["mathematics course", "calculus tutorial", "algebra"],
-    "Medicine": ["medical lecture", "anatomy tutorial", "physiology course"],
-    "Pharmacy": ["pharmacy course", "pharmacology", "pharmaceutical sciences"],
-    "Physics": ["physics lecture", "quantum physics", "physics tutorial"],
-    "Psychology": ["psychology course", "cognitive psychology", "behavioral psychology"],
-    "Statistic": ["statistics course", "statistical analysis", "probability theory"],
+    "architecture": ["architecture tutorial", "architectural design", "building design"],
+    "ai": ["artificial intelligence course", "machine learning tutorial", "deep learning"],
+    "biology": ["biology lecture", "molecular biology", "genetics tutorial"],
+    "business administration": ["business management", "MBA course", "entrepreneurship"],
+    "chemistry": ["chemistry lecture", "organic chemistry", "chemistry tutorial"],
+    "computer science": ["computer science course", "programming tutorial", "data structures"],
+    "cyber security": ["cybersecurity tutorial", "ethical hacking", "network security"],
+    "data science": ["data science course", "python data analysis", "statistics tutorial"],
+    "education": ["teaching methods", "educational psychology", "pedagogy"],
+    "engineering": ["engineering tutorial", "mechanical engineering", "civil engineering"],
+    "graphic design": ["graphic design tutorial", "adobe photoshop", "design principles"],
+    "law": ["law lecture", "legal studies", "constitutional law"],
+    "marketing": ["digital marketing", "marketing strategy", "social media marketing"],
+    "mathematics": ["mathematics course", "calculus tutorial", "algebra"],
+    "medicine": ["medical lecture", "anatomy tutorial", "physiology course"],
+    "pharmacy": ["pharmacy course", "pharmacology", "pharmaceutical sciences"],
+    "physics": ["physics lecture", "quantum physics", "physics tutorial"],
+    "psychology": ["psychology course", "cognitive psychology", "behavioral psychology"],
+    "statistics": ["statistics course", "statistical analysis", "probability theory"],
     "frontend": ["frontend development", "html css javascript", "react tutorial", "web design"],
     "backend": ["backend development", "node.js tutorial", "express js course", "databases mysql mongodb"]
 };
 
 let currentUser = null;
+
+// helper: safe text
+function safeText(s) {
+    return (s === undefined || s === null) ? "" : String(s);
+}
 
 // ==================== التحقق من تسجيل الدخول ====================
 window.addEventListener("DOMContentLoaded", async () => {
@@ -41,37 +46,34 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = user;
 
-    try {
-        const keyResponse = await fetch("https://edu-sync-back-end-production.up.railway.app/api/youtube-key");
-        const keyData = await keyResponse.json();
-        if (keyData.success) {
-            YOUTUBE_API_KEY = keyData.key;
-        } else {
-            console.error("Failed to get YouTube API Key");
-        }
-    } catch (err) {
-        console.error("Error fetching Youtube API KEY" , err)
-    }
-
     // عرض رسالة ترحيب
     const welcomeMsg = document.getElementById("welcome-message");
     const studyFieldMsg = document.getElementById("study-field-message");
     
     if (welcomeMsg && user.username) {
-        welcomeMsg.textContent = `Welcome back, ${user.username}! `;
+        welcomeMsg.textContent = `Welcome back, ${user.username}! 🎉`;
     }
 
     if (studyFieldMsg && user.study_field) {
-        studyFieldMsg.textContent = `Let's Study ${user.study_field} together`;
+        studyFieldMsg.textContent = `Let's explore ${user.study_field} together`;
     }
 
     // التحقق من صلاحية الـ session
     try {
-        const response = await fetch("https://edu-sync-back-end-production.up.railway.app/verify-session", {
+        const response = await fetch(`${BACKEND_BASE}/verify-session`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
-        const data = await response.json();
 
+        if (!response.ok) {
+            // invalid session -> logout
+            alert("Your session has expired. Please login again.");
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("user");
+            window.location.href = "../pages/login.html";
+            return;
+        }
+
+        const data = await response.json();
         if (!data.success) {
             alert("Your session has expired. Please login again.");
             localStorage.removeItem("authToken");
@@ -81,6 +83,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         }
     } catch (err) {
         console.error("Session verification error:", err);
+        // let user continue but they may get 401s later
     }
 
     // تحميل المحتوى الموصى به
@@ -92,13 +95,20 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 // ==================== تحميل المحتوى الموصى به ====================
 async function loadRecommendedContent() {
-    const studyField = currentUser.study_field || "Computer science";
+    const rawStudy = (currentUser && currentUser.study_field) ? currentUser.study_field : "computer science";
+    const studyField = String(rawStudy).toLowerCase();
+
+    // normalize mapping: keys are already lowercase in STUDY_FIELD_KEYWORDS
     const keywords = STUDY_FIELD_KEYWORDS[studyField] || ["tutorial", "course", "lecture"];
     
     const container = document.getElementById("recommended-playlists");
+    if (!container) {
+        console.warn("recommended-playlists container not found");
+        return;
+    }
     container.innerHTML = "";
 
-    // جلب videos لكل keyword
+    // جلب videos لكل keyword عبر الباك اند proxy
     for (const keyword of keywords) {
         try {
             const videos = await searchYouTube(keyword, 6);
@@ -116,19 +126,33 @@ async function loadRecommendedContent() {
     }
 }
 
-// ==================== البحث في YouTube ====================
+// ==================== البحث في YouTube عبر الـ Backend proxy ====================
 async function searchYouTube(query, maxResults = 12) {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&key=${YOUTUBE_API_KEY}`;
-    
     try {
+        const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}`;
+        console.log("Searching via backend:", url);
+
         const response = await fetch(url);
+        if (!response.ok) {
+            // try to parse error details
+            let err;
+            try {
+                err = await response.json();
+            } catch (e) {
+                err = { status: response.status, text: await response.text() };
+            }
+            console.error("Backend HTTP Error:", err);
+            return [];
+        }
+
         const data = await response.json();
-        
+
         if (data.error) {
             console.error("YouTube API Error:", data.error);
             return [];
         }
 
+        // data.items expected
         return data.items || [];
     } catch (error) {
         console.error("Search error:", error);
@@ -143,7 +167,7 @@ function createPlaylistSection(title, videos) {
 
     const titleEl = document.createElement("h2");
     titleEl.className = "playlist-title";
-    titleEl.textContent = title.charAt(0).toUpperCase() + title.slice(1);
+    titleEl.textContent = safeText(title).charAt(0).toUpperCase() + safeText(title).slice(1);
 
     const grid = document.createElement("div");
     grid.className = "video-grid";
@@ -158,42 +182,69 @@ function createPlaylistSection(title, videos) {
     return section;
 }
 
-// ==================== إنشاء Video Card ====================
+// ==================== إنشاء Video Card (بدون inline onclick) ====================
 function createVideoCard(video) {
-    const videoId = video.id.videoId;
-    const snippet = video.snippet;
-    
+    // video.id can be object {videoId: ...} or string id depending on response
+    let videoId = "";
+    if (typeof video.id === "string") {
+        videoId = video.id;
+    } else if (video.id && video.id.videoId) {
+        videoId = video.id.videoId;
+    } else if (video.snippet && video.snippet.resourceId && video.snippet.resourceId.videoId) {
+        videoId = video.snippet.resourceId.videoId;
+    }
+
+    const snippet = video.snippet || {};
+    const thumbnail = snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || "";
+    const title = safeText(snippet.title);
+    const channel = safeText(snippet.channelTitle);
+
     const card = document.createElement("div");
     card.className = "video-card";
 
-    const thumbnail = snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url;
-    
     card.innerHTML = `
-        <img src="${thumbnail}" alt="${snippet.title}" class="video-thumbnail">
+        <img src="${thumbnail}" alt="${title}" class="video-thumbnail">
         <div class="video-info">
-            <div class="video-title">${snippet.title}</div>
-            <div class="video-channel">${snippet.channelTitle}</div>
+            <div class="video-title">${title}</div>
+            <div class="video-channel">${channel}</div>
             <div class="video-actions">
-                <button class="btn-watch" onclick="watchVideo('${videoId}')">
-                    <i class="fas fa-play"></i> Watch
-                </button>
-                <button class="btn-save" onclick="saveVideo('${videoId}', '${snippet.title.replace(/'/g, "\\'")}', '${thumbnail}', '${snippet.channelTitle}')">
-                    <i class="fas fa-bookmark"></i> Save
-                </button>
+                <button class="btn-watch"><i class="fas fa-play"></i> Watch</button>
+                <button class="btn-save"><i class="fas fa-bookmark"></i> Save</button>
             </div>
         </div>
     `;
 
+    const watchBtn = card.querySelector(".btn-watch");
+    const saveBtn = card.querySelector(".btn-save");
+
+    if (watchBtn) {
+        watchBtn.addEventListener("click", () => {
+            if (videoId) window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+            else alert("Video ID not available.");
+        });
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener("click", () => {
+            saveVideo(videoId, title, thumbnail, channel);
+        });
+    }
+
     return card;
 }
 
-// ==================== Watch Video ====================
+// ==================== Watch Video (kept for compatibility) ====================
 function watchVideo(videoId) {
-    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+    if (videoId) window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
 }
 
 // ==================== Save Video ====================
 function saveVideo(videoId, title, thumbnail, channel) {
+    if (!videoId) {
+        alert("Cannot save this video (no id).");
+        return;
+    }
+
     let savedVideos = JSON.parse(localStorage.getItem("savedVideos") || "[]");
     
     // Check if already saved
@@ -210,8 +261,13 @@ function saveVideo(videoId, title, thumbnail, channel) {
         savedAt: new Date().toISOString()
     });
 
-    localStorage.setItem("savedVideos", JSON.stringify(savedVideos));
-    alert("Video saved successfully! ✓");
+    try {
+        localStorage.setItem("savedVideos", JSON.stringify(savedVideos));
+        alert("Video saved successfully! ✓");
+    } catch (e) {
+        console.error("Failed to save to localStorage:", e);
+        alert("Save failed (storage issue).");
+    }
 }
 
 // ==================== Setup Search ====================
@@ -220,6 +276,11 @@ function setupSearch() {
     const searchBtn = document.getElementById("search-btn");
     const searchResults = document.getElementById("search-results");
     const searchVideos = document.getElementById("search-videos");
+
+    if (!searchInput || !searchBtn) {
+        console.warn("Search inputs missing from DOM.");
+        return;
+    }
 
     searchBtn.addEventListener("click", performSearch);
     searchInput.addEventListener("keypress", (e) => {
@@ -230,30 +291,35 @@ function setupSearch() {
         const query = searchInput.value.trim();
         if (!query) return;
 
+        const prevText = searchBtn.innerHTML;
         searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
         searchBtn.disabled = true;
+
+        if (searchVideos) searchVideos.innerHTML = `<div class="loading">Searching...</div>`;
 
         try {
             const videos = await searchYouTube(query, 12);
             
-            searchVideos.innerHTML = "";
+            if (searchVideos) searchVideos.innerHTML = "";
             
-            if (videos.length === 0) {
-                searchVideos.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+            if (!videos || videos.length === 0) {
+                if (searchVideos) searchVideos.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
             } else {
                 videos.forEach(video => {
                     const card = createVideoCard(video);
-                    searchVideos.appendChild(card);
+                    if (searchVideos) searchVideos.appendChild(card);
                 });
             }
 
-            searchResults.style.display = "block";
-            searchResults.scrollIntoView({ behavior: "smooth" });
+            if (searchResults && typeof searchResults.style !== "undefined") {
+                searchResults.style.display = "block";
+                try { searchResults.scrollIntoView({ behavior: "smooth" }); } catch (e) { /* ignore */ }
+            }
         } catch (error) {
             console.error("Search error:", error);
             alert("Search failed. Please try again.");
         } finally {
-            searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
+            searchBtn.innerHTML = prevText;
             searchBtn.disabled = false;
         }
     }
@@ -272,7 +338,7 @@ if (logoutBtn) {
         const token = localStorage.getItem("authToken");
 
         try {
-            await fetch("https://edu-sync-back-end-production.up.railway.app/logout", {
+            await fetch(`${BACKEND_BASE}/logout`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
