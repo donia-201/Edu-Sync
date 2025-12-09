@@ -41,7 +41,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = user;
 
-    // جلب YouTube API Key من Backend
     try {
         const keyResponse = await fetch("https://edu-sync-back-end-production.up.railway.app/api/API-KEY");
         const keyData = await keyResponse.json();
@@ -59,7 +58,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const studyFieldMsg = document.getElementById("study-field-message");
     
     if (welcomeMsg && user.username) {
-        welcomeMsg.textContent = `Welcome back, ${user.username}! `;
+        welcomeMsg.textContent = `Welcome back, ${user.username}! <br> Let's study together`;
     }
 
     if (studyFieldMsg && user.study_field) {
