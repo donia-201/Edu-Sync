@@ -51,11 +51,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     const studyFieldMsg = document.getElementById("study-field-message");
     
     if (welcomeMsg && user.username) {
-        welcomeMsg.textContent = `Welcome back, ${user.username}! 🎉`;
+        welcomeMsg.textContent = `Welcome back, ${user.username}! `;
     }
 
     if (studyFieldMsg && user.study_field) {
-        studyFieldMsg.textContent = `Let's explore ${user.study_field} together`;
+        studyFieldMsg.textContent = `Let's study ${user.study_field} together`;
     }
 
     // التحقق من صلاحية الـ session
