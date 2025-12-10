@@ -1,7 +1,5 @@
 // home.js (frontend)
-// ==================== إعدادات عامة ====================
-const BACKEND_BASE = "https://edu-sync-back-end-production.up.railway.app"; // keep as is
-// Study Field Keywords (original labels kept but lookup normalized)
+const BACKEND_BASE = "https://edu-sync-back-end-production.up.railway.app"; 
 const STUDY_FIELD_KEYWORDS = {
     "architecture": ["architecture tutorial", "architectural design", "building design"],
     "ai": ["artificial intelligence course", "machine learning tutorial", "deep learning"],
@@ -28,12 +26,10 @@ const STUDY_FIELD_KEYWORDS = {
 
 let currentUser = null;
 
-// helper: safe text
 function safeText(s) {
     return (s === undefined || s === null) ? "" : String(s);
 }
 
-// ==================== التحقق من تسجيل الدخول ====================
 window.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -46,7 +42,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = user;
 
-    // عرض رسالة ترحيب
     const welcomeMsg = document.getElementById("welcome-message");
     const studyFieldMsg = document.getElementById("study-field-message");
     
@@ -58,14 +53,12 @@ window.addEventListener("DOMContentLoaded", async () => {
         studyFieldMsg.textContent = `Let's study ${user.study_field} together`;
     }
 
-    // التحقق من صلاحية الـ session
     try {
         const response = await fetch(`${BACKEND_BASE}/verify-session`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
         if (!response.ok) {
-            // invalid session -> logout
             alert("Your session has expired. Please login again.");
             localStorage.removeItem("authToken");
             localStorage.removeItem("user");
@@ -83,22 +76,17 @@ window.addEventListener("DOMContentLoaded", async () => {
         }
     } catch (err) {
         console.error("Session verification error:", err);
-        // let user continue but they may get 401s later
     }
 
-    // تحميل المحتوى الموصى به
     await loadRecommendedContent();
 
-    // Search functionality
     setupSearch();
 });
 
-// ==================== تحميل المحتوى الموصى به ====================
 async function loadRecommendedContent() {
     const rawStudy = (currentUser && currentUser.study_field) ? currentUser.study_field : "computer science";
     const studyField = String(rawStudy).toLowerCase();
 
-    // normalize mapping: keys are already lowercase in STUDY_FIELD_KEYWORDS
     const keywords = STUDY_FIELD_KEYWORDS[studyField] || ["tutorial", "course", "lecture"];
     
     const container = document.getElementById("recommended-playlists");
@@ -108,7 +96,6 @@ async function loadRecommendedContent() {
     }
     container.innerHTML = "";
 
-    // جلب videos لكل keyword عبر الباك اند proxy
     for (const keyword of keywords) {
         try {
             const videos = await searchYouTube(keyword, 6);
@@ -126,39 +113,53 @@ async function loadRecommendedContent() {
     }
 }
 
-// ==================== البحث في YouTube عبر الـ Backend proxy ====================
 async function searchYouTube(query, maxResults = 12) {
     try {
         const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}`;
-        console.log("Searching via backend:", url);
+        console.log("🔍 Searching via backend:", url);
 
         const response = await fetch(url);
+        
         if (!response.ok) {
-            // try to parse error details
-            let err;
+            let errorDetails;
             try {
-                err = await response.json();
+                errorDetails = await response.json();
+                console.error(" Backend Error:", errorDetails);
+                
+                // عرض رسالة خطأ واضحة للمستخدم
+                if (response.status === 403) {
+                    console.error("YouTube API quota exceeded or invalid key");
+                } else if (response.status === 500) {
+                    console.error("API key not configured on server");
+                }
             } catch (e) {
-                err = { status: response.status, text: await response.text() };
+                errorDetails = { 
+                    status: response.status, 
+                    text: await response.text() 
+                };
+                console.error(" HTTP Error:", errorDetails);
             }
-            console.error("Backend HTTP Error:", err);
             return [];
         }
 
         const data = await response.json();
 
         if (data.error) {
-            console.error("YouTube API Error:", data.error);
+            console.error(" YouTube API Error:", data.error);
+            if (data.hint) console.log("💡 Hint:", data.hint);
             return [];
         }
 
-        // data.items expected
-        return data.items || [];
+        const items = data.items || [];
+        console.log(`✅ Found ${items.length} videos`);
+        return items;
+        
     } catch (error) {
-        console.error("Search error:", error);
+        console.error("💥 Search error:", error);
         return [];
     }
 }
+
 
 // ==================== إنشاء Playlist Section ====================
 function createPlaylistSection(title, videos) {
