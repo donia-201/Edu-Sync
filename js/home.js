@@ -1,4 +1,3 @@
-// home.js (frontend) — improved version (preserves existing UI & logic)
 const BACKEND_BASE = "https://edu-sync-back-end-production.up.railway.app"; 
 
 const STUDY_FIELD_KEYWORDS = {
@@ -161,14 +160,11 @@ function isSearchTermEducational(query) {
         if (q.includes(b)) return false;
     }
 
-    // Not obviously educational -> reject (to enforce your rule: no non-educational results)
     return false;
 }
 
-// ---------------------- YouTube search wrapper (optionally supports pageToken) ----------------------
 async function searchYouTube(query, maxResults = 12, pageToken = "") {
     try {
-        // append pageToken only if provided
         const pageTokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
         const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}${pageTokenParam}`;
         console.log("🔍 Searching via backend:", url);
@@ -217,7 +213,7 @@ async function searchYouTube(query, maxResults = 12, pageToken = "") {
         return items;
         
     } catch (error) {
-        console.error("💥 Search error:", error);
+        console.error(" Search error:", error);
         return [];
     }
 }
