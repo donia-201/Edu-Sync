@@ -20,6 +20,11 @@ body{
     box-sizing: border-box;
     max-width: 100%;
     overflow: hidden;
+    padding:12px;
+}
+.navbar{
+    position: static;
+    scroll-behavior: smooth;
 }
 
 .button-nav{

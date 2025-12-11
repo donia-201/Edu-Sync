@@ -1,5 +1,6 @@
-// home.js (frontend)
+// home.js (frontend) — improved version (preserves existing UI & logic)
 const BACKEND_BASE = "https://edu-sync-back-end-production.up.railway.app"; 
+
 const STUDY_FIELD_KEYWORDS = {
     "architecture": ["architecture tutorial", "architectural design", "building design"],
     "ai": ["artificial intelligence course", "machine learning tutorial", "deep learning"],
@@ -25,6 +26,16 @@ const STUDY_FIELD_KEYWORDS = {
 };
 
 let currentUser = null;
+
+// ====== Educational filtering configuration ======
+const ALLOWED_SEARCH_TERMS = ["tutorial", "course", "learn", "learning", "lecture", "how to", "guide", "lesson", "introduction", "explain", "explanation"];
+const ALLOWED_TITLE_KEYWORDS = ["tutorial", "course", "lecture", "learn", "how to", "guide", "introduction", "lesson", "explain", "basics", "fundamentals"];
+const BLOCKED_KEYWORDS = ["game", "gaming", "gameplay", "walkthrough", "let's play", "trailer", "music video", "mv", "concert", "live", "fm", "stream", "sports"];
+const EDUCATION_CATEGORY_ID = "27"; // YouTube category id for Education (string or number depending on API return)
+
+// map to store nextPageToken per query for infinite loading (if backend returns it)
+const nextPageTokens = {};
+const loadingStates = {}; // keep per-query loading flag for search infinite loading
 
 function safeText(s) {
     return (s === undefined || s === null) ? "" : String(s);
@@ -83,39 +94,83 @@ window.addEventListener("DOMContentLoaded", async () => {
     setupSearch();
 });
 
-async function loadRecommendedContent() {
-    const rawStudy = (currentUser && currentUser.study_field) ? currentUser.study_field : "computer science";
-    const studyField = String(rawStudy).toLowerCase();
+// ---------------------- helper: determine if a video is educational ----------------------
+function isEducationalVideo(video) {
+    // video may contain snippet with title/description/channelTitle and possibly categoryId
+    const snippet = video.snippet || {};
+    const title = safeText(snippet.title).toLowerCase();
+    const description = safeText(snippet.description).toLowerCase();
+    const channel = safeText(snippet.channelTitle).toLowerCase();
 
-    const keywords = STUDY_FIELD_KEYWORDS[studyField] || ["tutorial", "course", "lecture"];
-    
-    const container = document.getElementById("recommended-playlists");
-    if (!container) {
-        console.warn("recommended-playlists container not found");
-        return;
-    }
-    container.innerHTML = "";
-
-    for (const keyword of keywords) {
-        try {
-            const videos = await searchYouTube(keyword, 6);
-            if (videos.length > 0) {
-                const section = createPlaylistSection(keyword, videos);
-                container.appendChild(section);
-            }
-        } catch (error) {
-            console.error(`Error loading ${keyword}:`, error);
+    // 1) If categoryId is provided and equals education id -> accept
+    const catId = snippet.categoryId || (snippet.category_id || null);
+    if (catId) {
+        if (String(catId) === String(EDUCATION_CATEGORY_ID)) {
+            return true;
         }
     }
 
-    if (container.children.length === 0) {
-        container.innerHTML = '<div class="no-results">No recommended content found.</div>';
+    // 2) If title/description/channel contain blocked keywords -> reject
+    for (const b of BLOCKED_KEYWORDS) {
+        if ((title && title.includes(b)) || (description && description.includes(b)) || (channel && channel.includes(b))) {
+            return false;
+        }
     }
+
+    // 3) If title/description contain allowed educational keywords -> accept
+    for (const k of ALLOWED_TITLE_KEYWORDS) {
+        if ((title && title.includes(k)) || (description && description.includes(k))) {
+            return true;
+        }
+    }
+
+    // 4) Fallback: look for common educational patterns (e.g., "how to", "course", "lecture")
+    for (const t of ALLOWED_SEARCH_TERMS) {
+        if ((title && title.includes(t)) || (description && description.includes(t))) {
+            return true;
+        }
+    }
+
+    // 5) Default: not confidently educational -> reject
+    return false;
 }
 
-async function searchYouTube(query, maxResults = 12) {
+// ---------------------- helper: determine if user's search query is "educational" ----------------------
+function isSearchTermEducational(query) {
+    const q = safeText(query).toLowerCase();
+
+    if (!q) return false;
+
+    // If the query explicitly contains one of the allowed terms or any study-field keyword -> accept
+    for (const t of ALLOWED_SEARCH_TERMS) {
+        if (q.includes(t)) return true;
+    }
+
+    // check against study fields keywords (allow searching by field name alone like "physics" or "data science")
+    for (const field of Object.keys(STUDY_FIELD_KEYWORDS)) {
+        if (q.includes(field)) return true;
+        // also check the field's specific keywords
+        const kws = STUDY_FIELD_KEYWORDS[field] || [];
+        for (const kw of kws) {
+            if (q.includes(kw)) return true;
+        }
+    }
+
+    // If user typed a suspicious term (blocked) -> reject
+    for (const b of BLOCKED_KEYWORDS) {
+        if (q.includes(b)) return false;
+    }
+
+    // Not obviously educational -> reject (to enforce your rule: no non-educational results)
+    return false;
+}
+
+// ---------------------- YouTube search wrapper (optionally supports pageToken) ----------------------
+async function searchYouTube(query, maxResults = 12, pageToken = "") {
     try {
-        const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}`;
+        // append pageToken only if provided
+        const pageTokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
+        const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}${pageTokenParam}`;
         console.log("🔍 Searching via backend:", url);
 
         const response = await fetch(url);
@@ -126,7 +181,6 @@ async function searchYouTube(query, maxResults = 12) {
                 errorDetails = await response.json();
                 console.error(" Backend Error:", errorDetails);
                 
-                // عرض رسالة خطأ واضحة للمستخدم
                 if (response.status === 403) {
                     console.error("YouTube API quota exceeded or invalid key");
                 } else if (response.status === 500) {
@@ -150,8 +204,16 @@ async function searchYouTube(query, maxResults = 12) {
             return [];
         }
 
+        // store nextPageToken if backend returned it (for infinite scroll)
+        if (data.nextPageToken) {
+            nextPageTokens[query] = data.nextPageToken;
+        } else {
+            // if no token returned, remove existing token
+            delete nextPageTokens[query];
+        }
+
         const items = data.items || [];
-        console.log(`✅ Found ${items.length} videos`);
+        console.log(`✅ Found ${items.length} videos for "${query}"`);
         return items;
         
     } catch (error) {
@@ -159,7 +221,6 @@ async function searchYouTube(query, maxResults = 12) {
         return [];
     }
 }
-
 
 // ==================== إنشاء Playlist Section ====================
 function createPlaylistSection(title, videos) {
@@ -173,10 +234,13 @@ function createPlaylistSection(title, videos) {
     const grid = document.createElement("div");
     grid.className = "video-grid";
 
+    // Use DocumentFragment to minimize reflows
+    const frag = document.createDocumentFragment();
     videos.forEach(video => {
         const card = createVideoCard(video);
-        grid.appendChild(card);
+        frag.appendChild(card);
     });
+    grid.appendChild(frag);
 
     section.appendChild(titleEl);
     section.appendChild(grid);
@@ -193,6 +257,9 @@ function createVideoCard(video) {
         videoId = video.id.videoId;
     } else if (video.snippet && video.snippet.resourceId && video.snippet.resourceId.videoId) {
         videoId = video.snippet.resourceId.videoId;
+    } else if (video.id && video.id.playlistId) {
+        // skip playlists for now; keep compatibility
+        videoId = "";
     }
 
     const snippet = video.snippet || {};
@@ -203,8 +270,9 @@ function createVideoCard(video) {
     const card = document.createElement("div");
     card.className = "video-card";
 
+    // Use loading="lazy" to avoid loading all thumbnails immediately
     card.innerHTML = `
-        <img src="${thumbnail}" alt="${title}" class="video-thumbnail">
+        <img data-src="${thumbnail}" src="${thumbnail}" alt="${title}" class="video-thumbnail" loading="lazy">
         <div class="video-info">
             <div class="video-title">${title}</div>
             <div class="video-channel">${channel}</div>
@@ -288,9 +356,19 @@ function setupSearch() {
         if (e.key === "Enter") performSearch();
     });
 
+    // sentinel element for infinite loading in search results
+    let sentinel = null;
+    let sentinelObserver = null;
+
     async function performSearch() {
         const query = searchInput.value.trim();
         if (!query) return;
+
+        // enforce educational-only searches
+        if (!isSearchTermEducational(query)) {
+            if (searchVideos) searchVideos.innerHTML = `<div class="no-results">Only educational topics are allowed. Try adding "tutorial", "course", or "how to" to your query.</div>`;
+            return;
+        }
 
         const prevText = searchBtn.innerHTML;
         searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
@@ -299,23 +377,80 @@ function setupSearch() {
         if (searchVideos) searchVideos.innerHTML = `<div class="loading">Searching...</div>`;
 
         try {
-            const videos = await searchYouTube(query, 12);
-            
+            // reset any stored token for this query
+            delete nextPageTokens[query];
+            loadingStates[query] = false;
+
+            const videos = await searchYouTube(query, 12, "");
+
+            // filter to educational only
+            const filtered = videos.filter(isEducationalVideo);
+
             if (searchVideos) searchVideos.innerHTML = "";
-            
-            if (!videos || videos.length === 0) {
-                if (searchVideos) searchVideos.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+
+            if (!filtered || filtered.length === 0) {
+                if (searchVideos) searchVideos.innerHTML = '<div class="no-results">No educational results found. Try a different query.</div>';
             } else {
-                videos.forEach(video => {
+                // append using fragment
+                const frag = document.createDocumentFragment();
+                filtered.forEach(video => {
                     const card = createVideoCard(video);
-                    if (searchVideos) searchVideos.appendChild(card);
+                    frag.appendChild(card);
                 });
+                if (searchVideos) searchVideos.appendChild(frag);
             }
 
+            // show results area
             if (searchResults && typeof searchResults.style !== "undefined") {
                 searchResults.style.display = "block";
                 try { searchResults.scrollIntoView({ behavior: "smooth" }); } catch (e) { /* ignore */ }
             }
+
+
+            if (sentinelObserver) {
+                sentinelObserver.disconnect();
+                sentinelObserver = null;
+            }
+            if (sentinel && sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
+
+            // create sentinel only if there is a nextPageToken for this query
+            if (nextPageTokens[query]) {
+                sentinel = document.createElement("div");
+                sentinel.className = "search-sentinel";
+                sentinel.style.padding = "20px";
+                sentinel.textContent = "Loading more...";
+                if (searchVideos) searchVideos.appendChild(sentinel);
+
+                sentinelObserver = new IntersectionObserver(async (entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting) {
+                            // prevent concurrent loads
+                            if (loadingStates[query]) return;
+                            loadingStates[query] = true;
+
+                            const token = nextPageTokens[query];
+                            const moreVideos = await searchYouTube(query, 12, token);
+                            // filter educational videos
+                            const moreFiltered = moreVideos.filter(isEducationalVideo);
+                            if (moreFiltered.length > 0 && searchVideos) {
+                                const fragMore = document.createDocumentFragment();
+                                moreFiltered.forEach(v => fragMore.appendChild(createVideoCard(v)));
+                                searchVideos.insertBefore(fragMore, sentinel); // insert before sentinel
+                            }
+
+                            // stop observing if no more tokens
+                            if (!nextPageTokens[query]) {
+                                if (sentinelObserver) { sentinelObserver.disconnect(); sentinelObserver = null; }
+                                if (sentinel && sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
+                            }
+                            loadingStates[query] = false;
+                        }
+                    }
+                }, { rootMargin: "300px" });
+
+                sentinelObserver.observe(sentinel);
+            }
+
         } catch (error) {
             console.error("Search error:", error);
             alert("Search failed. Please try again.");
@@ -326,7 +461,6 @@ function setupSearch() {
     }
 }
 
-// ==================== Logout Function ====================
 const logoutBtn = document.getElementById("logout-btn");
 
 if (logoutBtn) {
@@ -355,4 +489,39 @@ if (logoutBtn) {
         alert("Logged out successfully!");
         window.location.href = "../index.html";
     });
+}
+
+// ==================== loadRecommendedContent with educational filtering and batching ====================
+async function loadRecommendedContent() {
+    const rawStudy = (currentUser && currentUser.study_field) ? currentUser.study_field : "computer science";
+    const studyField = String(rawStudy).toLowerCase();
+
+    const keywords = STUDY_FIELD_KEYWORDS[studyField] || ["tutorial", "course", "lecture"];
+    
+    const container = document.getElementById("recommended-playlists");
+    if (!container) {
+        console.warn("recommended-playlists  not found");
+        return;
+    }
+    container.innerHTML = "";
+
+    // We'll fetch each keyword but only show educational videos
+    for (const keyword of keywords) {
+        try {
+            const videos = await searchYouTube(keyword, 6);
+            if (!videos || videos.length === 0) continue;
+
+            const filtered = videos.filter(isEducationalVideo);
+            if (filtered.length > 0) {
+                const section = createPlaylistSection(keyword, filtered);
+                container.appendChild(section);
+            }
+        } catch (error) {
+            console.error(`Error loading ${keyword}:`, error);
+        }
+    }
+
+    if (container.children.length === 0) {
+        container.innerHTML = '<div class="no-results">No recommended content found.</div>';
+    }
 }
