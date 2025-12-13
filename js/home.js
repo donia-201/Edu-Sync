@@ -1,45 +1,74 @@
-const BACKEND_BASE = "https://edu-sync-back-end-production.up.railway.app"; 
+// home.js (frontend) - Updated Version
+// ==================== إعدادات عامة ====================
+const BACKEND_BASE = "https://edu-sync-back-end-production.up.railway.app";
 
+// Study Field Keywords - موسعة بكلمات أكتر
 const STUDY_FIELD_KEYWORDS = {
-    "architecture": ["architecture tutorial", "architectural design", "building design"],
-    "ai": ["artificial intelligence course", "machine learning tutorial", "deep learning"],
-    "biology": ["biology lecture", "molecular biology", "genetics tutorial"],
-    "business administration": ["business management", "MBA course", "entrepreneurship"],
-    "chemistry": ["chemistry lecture", "organic chemistry", "chemistry tutorial"],
-    "computer science": ["computer science course", "programming tutorial", "data structures"],
-    "cyber security": ["cybersecurity tutorial", "ethical hacking", "network security"],
-    "data science": ["data science course", "python data analysis", "statistics tutorial"],
-    "education": ["teaching methods", "educational psychology", "pedagogy"],
-    "engineering": ["engineering tutorial", "mechanical engineering", "civil engineering"],
-    "graphic design": ["graphic design tutorial", "adobe photoshop", "design principles"],
-    "law": ["law lecture", "legal studies", "constitutional law"],
-    "marketing": ["digital marketing", "marketing strategy", "social media marketing"],
-    "mathematics": ["mathematics course", "calculus tutorial", "algebra"],
-    "medicine": ["medical lecture", "anatomy tutorial", "physiology course"],
-    "pharmacy": ["pharmacy course", "pharmacology", "pharmaceutical sciences"],
-    "physics": ["physics lecture", "quantum physics", "physics tutorial"],
-    "psychology": ["psychology course", "cognitive psychology", "behavioral psychology"],
-    "statistics": ["statistics course", "statistical analysis", "probability theory"],
-    "frontend": ["frontend development", "html css javascript", "react tutorial", "web design"],
-    "backend": ["backend development", "node.js tutorial", "express js course", "databases mysql mongodb"]
+    "architecture": ["architecture tutorial", "architectural design", "building design", "urban planning", "interior design"],
+    "ai": ["artificial intelligence", "machine learning", "deep learning", "neural networks", "AI tutorial"],
+    "biology": ["biology lecture", "molecular biology", "genetics", "cell biology", "microbiology"],
+    "business administration": ["business management", "MBA", "entrepreneurship", "leadership", "business strategy"],
+    "chemistry": ["chemistry lecture", "organic chemistry", "inorganic chemistry", "chemical reactions"],
+    "computer science": ["computer science", "programming", "data structures", "algorithms", "coding tutorial"],
+    "cyber security": ["cybersecurity", "ethical hacking", "network security", "penetration testing", "security tutorial"],
+    "data science": ["data science", "python data analysis", "statistics", "data visualization", "machine learning"],
+    "education": ["teaching methods", "educational psychology", "pedagogy", "learning strategies"],
+    "engineering": ["engineering", "mechanical engineering", "civil engineering", "electrical engineering"],
+    "graphic design": ["graphic design", "photoshop tutorial", "design principles", "typography", "branding"],
+    "law": ["law lecture", "legal studies", "constitutional law", "criminal law", "civil law"],
+    "marketing": ["digital marketing", "marketing strategy", "social media marketing", "SEO", "content marketing"],
+    "mathematics": ["mathematics", "calculus", "algebra", "geometry", "trigonometry", "math tutorial"],
+    "medicine": ["medical lecture", "anatomy", "physiology", "pathology", "medical education"],
+    "pharmacy": ["pharmacy", "pharmacology", "pharmaceutical sciences", "drug chemistry"],
+    "physics": ["physics lecture", "quantum physics", "mechanics", "thermodynamics", "electromagnetism"],
+    "psychology": ["psychology", "cognitive psychology", "behavioral psychology", "mental health"],
+    "statistics": ["statistics", "statistical analysis", "probability", "data analysis"],
+    "frontend": ["frontend development", "html css", "javascript", "react", "vue", "web design"],
+    "backend": ["backend development", "node.js", "express", "databases", "API development", "python django"]
 };
 
 let currentUser = null;
 
-// ====== Educational filtering configuration ======
-const ALLOWED_SEARCH_TERMS = ["tutorial", "course", "learn", "learning", "lecture", "how to", "guide", "lesson", "introduction", "explain", "explanation"];
-const ALLOWED_TITLE_KEYWORDS = ["tutorial", "course", "lecture", "learn", "how to", "guide", "introduction", "lesson", "explain", "basics", "fundamentals"];
-const BLOCKED_KEYWORDS = ["game", "gaming", "gameplay", "walkthrough", "let's play", "trailer", "music video", "mv", "concert", "live", "fm", "stream", "sports"];
-const EDUCATION_CATEGORY_ID = "27"; // YouTube category id for Education (string or number depending on API return)
-
-// map to store nextPageToken per query for infinite loading (if backend returns it)
-const nextPageTokens = {};
-const loadingStates = {}; // keep per-query loading flag for search infinite loading
-
+// helper: safe text
 function safeText(s) {
     return (s === undefined || s === null) ? "" : String(s);
 }
 
+// ==================== عرض الرسائل في الصفحة ====================
+function showMessage(message, type = 'info') {
+    const container = document.getElementById("recommended-playlists");
+    if (!container) return;
+    
+    const colors = {
+        'info': '#2196F3',
+        'success': '#4CAF50',
+        'warning': '#FF9800',
+        'error': '#f44336'
+    };
+    
+    const icons = {
+        'info': 'ℹ️',
+        'success': '✅',
+        'warning': '⚠️',
+        'error': '❌'
+    };
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        background: ${colors[type]}15;
+        border-left: 4px solid ${colors[type]};
+        padding: 15px 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+        font-size: 16px;
+        color: #333;
+    `;
+    messageDiv.innerHTML = `<strong>${icons[type]} ${message}</strong>`;
+    
+    container.insertBefore(messageDiv, container.firstChild);
+}
+
+// ==================== التحقق من تسجيل الدخول ====================
 window.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -52,6 +81,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     currentUser = user;
 
+    // عرض رسالة ترحيب
     const welcomeMsg = document.getElementById("welcome-message");
     const studyFieldMsg = document.getElementById("study-field-message");
     
@@ -63,6 +93,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         studyFieldMsg.textContent = `Let's study ${user.study_field} together`;
     }
 
+    // التحقق من صلاحية الـ session
     try {
         const response = await fetch(`${BACKEND_BASE}/verify-session`, {
             headers: { "Authorization": `Bearer ${token}` }
@@ -88,133 +119,108 @@ window.addEventListener("DOMContentLoaded", async () => {
         console.error("Session verification error:", err);
     }
 
+    // تحميل المحتوى الموصى به
     await loadRecommendedContent();
 
+    // Search functionality
     setupSearch();
 });
 
-// ---------------------- helper: determine if a video is educational ----------------------
-function isEducationalVideo(video) {
-    // video may contain snippet with title/description/channelTitle and possibly categoryId
-    const snippet = video.snippet || {};
-    const title = safeText(snippet.title).toLowerCase();
-    const description = safeText(snippet.description).toLowerCase();
-    const channel = safeText(snippet.channelTitle).toLowerCase();
+// ==================== تحميل المحتوى الموصى به ====================
+async function loadRecommendedContent() {
+    const rawStudy = (currentUser && currentUser.study_field) ? currentUser.study_field : "computer science";
+    const studyField = String(rawStudy).toLowerCase();
 
-    // 1) If categoryId is provided and equals education id -> accept
-    const catId = snippet.categoryId || (snippet.category_id || null);
-    if (catId) {
-        if (String(catId) === String(EDUCATION_CATEGORY_ID)) {
-            return true;
+    const keywords = STUDY_FIELD_KEYWORDS[studyField] || [
+        "tutorial", "course", "lecture", "learn", "education"
+    ];
+    
+    const container = document.getElementById("recommended-playlists");
+    if (!container) {
+        console.warn("recommended-playlists container not found");
+        return;
+    }
+    container.innerHTML = '<div class="loading">🔄 جاري تحميل المحتوى الموصى به...</div>';
+
+    let totalVideosFound = 0;
+    let sectionsCreated = 0;
+
+    // جلب videos لكل keyword
+    for (const keyword of keywords) {
+        try {
+            showMessage(`🔍 البحث عن: ${keyword}`, 'info');
+            
+            const result = await searchYouTube(keyword, 6);
+            
+            if (result.message) {
+                showMessage(result.message, result.videos.length > 0 ? 'success' : 'warning');
+            }
+            
+            if (result.videos.length > 0) {
+                const section = createPlaylistSection(keyword, result.videos);
+                if (container.querySelector('.loading')) {
+                    container.innerHTML = '';
+                }
+                container.appendChild(section);
+                totalVideosFound += result.videos.length;
+                sectionsCreated++;
+            }
+        } catch (error) {
+            console.error(`Error loading ${keyword}:`, error);
+            showMessage(`⚠️ خطأ في البحث عن: ${keyword}`, 'error');
         }
     }
 
-    // 2) If title/description/channel contain blocked keywords -> reject
-    for (const b of BLOCKED_KEYWORDS) {
-        if ((title && title.includes(b)) || (description && description.includes(b)) || (channel && channel.includes(b))) {
-            return false;
-        }
+    if (sectionsCreated === 0) {
+        container.innerHTML = '';
+        showMessage(`❌ لم يتم العثور على محتوى لـ "${studyField}". جرب تغيير مجال الدراسة من الإعدادات.`, 'error');
+    } else {
+        showMessage(`✅ تم تحميل ${totalVideosFound} فيديو في ${sectionsCreated} قسم`, 'success');
     }
-
-    // 3) If title/description contain allowed educational keywords -> accept
-    for (const k of ALLOWED_TITLE_KEYWORDS) {
-        if ((title && title.includes(k)) || (description && description.includes(k))) {
-            return true;
-        }
-    }
-
-    // 4) Fallback: look for common educational patterns (e.g., "how to", "course", "lecture")
-    for (const t of ALLOWED_SEARCH_TERMS) {
-        if ((title && title.includes(t)) || (description && description.includes(t))) {
-            return true;
-        }
-    }
-
-    // 5) Default: not confidently educational -> reject
-    return false;
 }
 
-// ---------------------- helper: determine if user's search query is "educational" ----------------------
-function isSearchTermEducational(query) {
-    const q = safeText(query).toLowerCase();
-
-    if (!q) return false;
-
-    // If the query explicitly contains one of the allowed terms or any study-field keyword -> accept
-    for (const t of ALLOWED_SEARCH_TERMS) {
-        if (q.includes(t)) return true;
-    }
-
-    // check against study fields keywords (allow searching by field name alone like "physics" or "data science")
-    for (const field of Object.keys(STUDY_FIELD_KEYWORDS)) {
-        if (q.includes(field)) return true;
-        // also check the field's specific keywords
-        const kws = STUDY_FIELD_KEYWORDS[field] || [];
-        for (const kw of kws) {
-            if (q.includes(kw)) return true;
-        }
-    }
-
-    // If user typed a suspicious term (blocked) -> reject
-    for (const b of BLOCKED_KEYWORDS) {
-        if (q.includes(b)) return false;
-    }
-
-    return false;
-}
-
-async function searchYouTube(query, maxResults = 12, pageToken = "") {
+// ==================== البحث في YouTube ====================
+async function searchYouTube(query, maxResults = 12) {
     try {
-        const pageTokenParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
-        const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}${pageTokenParam}`;
-        console.log("🔍 Searching via backend:", url);
+        const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}`;
+        console.log("🔍 Searching:", url);
 
         const response = await fetch(url);
-        
-        if (!response.ok) {
-            let errorDetails;
-            try {
-                errorDetails = await response.json();
-                console.error(" Backend Error:", errorDetails);
-                
-                if (response.status === 403) {
-                    console.error("YouTube API quota exceeded or invalid key");
-                } else if (response.status === 500) {
-                    console.error("API key not configured on server");
-                }
-            } catch (e) {
-                errorDetails = { 
-                    status: response.status, 
-                    text: await response.text() 
-                };
-                console.error(" HTTP Error:", errorDetails);
-            }
-            return [];
-        }
-
         const data = await response.json();
 
-        if (data.error) {
-            console.error(" YouTube API Error:", data.error);
-            if (data.hint) console.log("💡 Hint:", data.hint);
-            return [];
+        // عرض الرسالة من الـ Backend
+        let message = data.display_message || '';
+        
+        if (!response.ok) {
+            console.error("Backend Error:", data);
+            return {
+                videos: [],
+                message: message || `⚠️ خطأ في البحث (${response.status})`
+            };
         }
 
-        // store nextPageToken if backend returned it (for infinite scroll)
-        if (data.nextPageToken) {
-            nextPageTokens[query] = data.nextPageToken;
-        } else {
-            // if no token returned, remove existing token
-            delete nextPageTokens[query];
+        if (data.error) {
+            console.error("YouTube API Error:", data.error);
+            return {
+                videos: [],
+                message: message || `⚠️ ${data.error}`
+            };
         }
 
         const items = data.items || [];
-        console.log(`✅ Found ${items.length} videos for "${query}"`);
-        return items;
+        console.log(`✅ Found ${items.length} videos`);
+        
+        return {
+            videos: items,
+            message: message || `✅ وجدنا ${items.length} فيديو`
+        };
         
     } catch (error) {
-        console.error(" Search error:", error);
-        return [];
+        console.error("Search error:", error);
+        return {
+            videos: [],
+            message: `⚠️ خطأ في الاتصال: ${error.message}`
+        };
     }
 }
 
@@ -230,22 +236,18 @@ function createPlaylistSection(title, videos) {
     const grid = document.createElement("div");
     grid.className = "video-grid";
 
-    // Use DocumentFragment to minimize reflows
-    const frag = document.createDocumentFragment();
     videos.forEach(video => {
         const card = createVideoCard(video);
-        frag.appendChild(card);
+        grid.appendChild(card);
     });
-    grid.appendChild(frag);
 
     section.appendChild(titleEl);
     section.appendChild(grid);
     return section;
 }
 
-// ==================== إنشاء Video Card (بدون inline onclick) ====================
+// ==================== إنشاء Video Card ====================
 function createVideoCard(video) {
-    // video.id can be object {videoId: ...} or string id depending on response
     let videoId = "";
     if (typeof video.id === "string") {
         videoId = video.id;
@@ -253,9 +255,6 @@ function createVideoCard(video) {
         videoId = video.id.videoId;
     } else if (video.snippet && video.snippet.resourceId && video.snippet.resourceId.videoId) {
         videoId = video.snippet.resourceId.videoId;
-    } else if (video.id && video.id.playlistId) {
-        // skip playlists for now; keep compatibility
-        videoId = "";
     }
 
     const snippet = video.snippet || {};
@@ -266,9 +265,8 @@ function createVideoCard(video) {
     const card = document.createElement("div");
     card.className = "video-card";
 
-    // Use loading="lazy" to avoid loading all thumbnails immediately
     card.innerHTML = `
-        <img data-src="${thumbnail}" src="${thumbnail}" alt="${title}" class="video-thumbnail" loading="lazy">
+        <img src="${thumbnail}" alt="${title}" class="video-thumbnail">
         <div class="video-info">
             <div class="video-title">${title}</div>
             <div class="video-channel">${channel}</div>
@@ -298,11 +296,6 @@ function createVideoCard(video) {
     return card;
 }
 
-// ==================== Watch Video (kept for compatibility) ====================
-function watchVideo(videoId) {
-    if (videoId) window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
-}
-
 // ==================== Save Video ====================
 function saveVideo(videoId, title, thumbnail, channel) {
     if (!videoId) {
@@ -312,7 +305,6 @@ function saveVideo(videoId, title, thumbnail, channel) {
 
     let savedVideos = JSON.parse(localStorage.getItem("savedVideos") || "[]");
     
-    // Check if already saved
     if (savedVideos.find(v => v.videoId === videoId)) {
         alert("Video already saved!");
         return;
@@ -352,104 +344,72 @@ function setupSearch() {
         if (e.key === "Enter") performSearch();
     });
 
-    // sentinel element for infinite loading in search results
-    let sentinel = null;
-    let sentinelObserver = null;
-
     async function performSearch() {
         const query = searchInput.value.trim();
-        if (!query) return;
-
-        // enforce educational-only searches
-        if (!isSearchTermEducational(query)) {
-            if (searchVideos) searchVideos.innerHTML = `<div class="no-results">Only educational topics are allowed. Try adding "tutorial", "course", or "how to" to your query.</div>`;
+        if (!query) {
+            showMessage("⚠️ من فضلك اكتب كلمة للبحث", 'warning');
             return;
         }
 
         const prevText = searchBtn.innerHTML;
-        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البحث...';
         searchBtn.disabled = true;
 
-        if (searchVideos) searchVideos.innerHTML = `<div class="loading">Searching...</div>`;
+        if (searchVideos) searchVideos.innerHTML = `<div class="loading">🔄 جاري البحث عن "${query}"...</div>`;
 
         try {
-            // reset any stored token for this query
-            delete nextPageTokens[query];
-            loadingStates[query] = false;
-
-            const videos = await searchYouTube(query, 12, "");
-
-            // filter to educational only
-            const filtered = videos.filter(isEducationalVideo);
-
+            const result = await searchYouTube(query, 12);
+            
             if (searchVideos) searchVideos.innerHTML = "";
-
-            if (!filtered || filtered.length === 0) {
-                if (searchVideos) searchVideos.innerHTML = '<div class="no-results">No educational results found. Try a different query.</div>';
+            
+            if (result.message) {
+                const msgDiv = document.createElement('div');
+                msgDiv.style.cssText = `
+                    padding: 15px;
+                    margin: 10px 0;
+                    background: #f0f0f0;
+                    border-radius: 8px;
+                    text-align: center;
+                `;
+                msgDiv.textContent = result.message;
+                if (searchVideos) searchVideos.appendChild(msgDiv);
+            }
+            
+            if (result.videos.length === 0) {
+                if (searchVideos) {
+                    searchVideos.innerHTML += `
+                        <div class="no-results">
+                            <p>❌ لم نجد نتائج لـ "${query}"</p>
+                            <p>💡 جرب:</p>
+                            <ul style="text-align: right; list-style: none;">
+                                <li>• استخدم كلمات بحث أخرى</li>
+                                <li>• أضف كلمة "tutorial" أو "course"</li>
+                                <li>• تأكد من كتابة الكلمات بشكل صحيح</li>
+                            </ul>
+                        </div>
+                    `;
+                }
             } else {
-                // append using fragment
-                const frag = document.createDocumentFragment();
-                filtered.forEach(video => {
+                result.videos.forEach(video => {
                     const card = createVideoCard(video);
-                    frag.appendChild(card);
+                    if (searchVideos) searchVideos.appendChild(card);
                 });
-                if (searchVideos) searchVideos.appendChild(frag);
             }
 
-            // show results area
-            if (searchResults && typeof searchResults.style !== "undefined") {
+            if (searchResults) {
                 searchResults.style.display = "block";
-                try { searchResults.scrollIntoView({ behavior: "smooth" }); } catch (e) { /* ignore */ }
+                try { searchResults.scrollIntoView({ behavior: "smooth" }); } catch (e) { }
             }
-
-
-            if (sentinelObserver) {
-                sentinelObserver.disconnect();
-                sentinelObserver = null;
-            }
-            if (sentinel && sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
-
-            // create sentinel only if there is a nextPageToken for this query
-            if (nextPageTokens[query]) {
-                sentinel = document.createElement("div");
-                sentinel.className = "search-sentinel";
-                sentinel.style.padding = "20px";
-                sentinel.textContent = "Loading more...";
-                if (searchVideos) searchVideos.appendChild(sentinel);
-
-                sentinelObserver = new IntersectionObserver(async (entries) => {
-                    for (const entry of entries) {
-                        if (entry.isIntersecting) {
-                            // prevent concurrent loads
-                            if (loadingStates[query]) return;
-                            loadingStates[query] = true;
-
-                            const token = nextPageTokens[query];
-                            const moreVideos = await searchYouTube(query, 12, token);
-                            // filter educational videos
-                            const moreFiltered = moreVideos.filter(isEducationalVideo);
-                            if (moreFiltered.length > 0 && searchVideos) {
-                                const fragMore = document.createDocumentFragment();
-                                moreFiltered.forEach(v => fragMore.appendChild(createVideoCard(v)));
-                                searchVideos.insertBefore(fragMore, sentinel); // insert before sentinel
-                            }
-
-                            // stop observing if no more tokens
-                            if (!nextPageTokens[query]) {
-                                if (sentinelObserver) { sentinelObserver.disconnect(); sentinelObserver = null; }
-                                if (sentinel && sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
-                            }
-                            loadingStates[query] = false;
-                        }
-                    }
-                }, { rootMargin: "300px" });
-
-                sentinelObserver.observe(sentinel);
-            }
-
         } catch (error) {
             console.error("Search error:", error);
-            alert("Search failed. Please try again.");
+            if (searchVideos) {
+                searchVideos.innerHTML = `
+                    <div class="no-results">
+                        <p>⚠️ حدث خطأ أثناء البحث</p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
         } finally {
             searchBtn.innerHTML = prevText;
             searchBtn.disabled = false;
@@ -457,6 +417,7 @@ function setupSearch() {
     }
 }
 
+// ==================== Logout Function ====================
 const logoutBtn = document.getElementById("logout-btn");
 
 if (logoutBtn) {
@@ -485,39 +446,4 @@ if (logoutBtn) {
         alert("Logged out successfully!");
         window.location.href = "../index.html";
     });
-}
-
-// ==================== loadRecommendedContent with educational filtering and batching ====================
-async function loadRecommendedContent() {
-    const rawStudy = (currentUser && currentUser.study_field) ? currentUser.study_field : "computer science";
-    const studyField = String(rawStudy).toLowerCase();
-
-    const keywords = STUDY_FIELD_KEYWORDS[studyField] || ["tutorial", "course", "lecture"];
-    
-    const container = document.getElementById("recommended-playlists");
-    if (!container) {
-        console.warn("recommended-playlists  not found");
-        return;
-    }
-    container.innerHTML = "";
-
-    // We'll fetch each keyword but only show educational videos
-    for (const keyword of keywords) {
-        try {
-            const videos = await searchYouTube(keyword, 6);
-            if (!videos || videos.length === 0) continue;
-
-            const filtered = videos.filter(isEducationalVideo);
-            if (filtered.length > 0) {
-                const section = createPlaylistSection(keyword, filtered);
-                container.appendChild(section);
-            }
-        } catch (error) {
-            console.error(`Error loading ${keyword}:`, error);
-        }
-    }
-
-    if (container.children.length === 0) {
-        container.innerHTML = '<div class="no-results">No recommended content found.</div>';
-    }
 }
