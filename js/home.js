@@ -1,15 +1,12 @@
-// home.js (frontend) - Updated Version
-// ==================== إعدادات عامة ====================
 const BACKEND_BASE = "https://edu-sync-back-end-production.up.railway.app";
 
-// Study Field Keywords - موسعة بكلمات أكتر
 const STUDY_FIELD_KEYWORDS = {
     "architecture": ["architecture tutorial", "architectural design", "building design", "urban planning", "interior design"],
     "ai": ["artificial intelligence", "machine learning", "deep learning", "neural networks", "AI tutorial"],
     "biology": ["biology lecture", "molecular biology", "genetics", "cell biology", "microbiology"],
     "business administration": ["business management", "MBA", "entrepreneurship", "leadership", "business strategy"],
     "chemistry": ["chemistry lecture", "organic chemistry", "inorganic chemistry", "chemical reactions"],
-    "computer science": ["computer science", "programming", "data structures", "algorithms", "coding tutorial"],
+    "computer science": ["python tutorial", "programming tutorial", "data structures", "algorithms", "coding course"],
     "cyber security": ["cybersecurity", "ethical hacking", "network security", "penetration testing", "security tutorial"],
     "data science": ["data science", "python data analysis", "statistics", "data visualization", "machine learning"],
     "education": ["teaching methods", "educational psychology", "pedagogy", "learning strategies"],
@@ -29,12 +26,10 @@ const STUDY_FIELD_KEYWORDS = {
 
 let currentUser = null;
 
-// helper: safe text
 function safeText(s) {
     return (s === undefined || s === null) ? "" : String(s);
 }
 
-// ==================== عرض الرسائل في الصفحة ====================
 function showMessage(message, type = 'info') {
     const container = document.getElementById("recommended-playlists");
     if (!container) return;
@@ -56,20 +51,27 @@ function showMessage(message, type = 'info') {
     const messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
         background: ${colors[type]}15;
+        border: 1px solid ${colors[type]}40;
         border-left: 4px solid ${colors[type]};
         padding: 15px 20px;
-        margin: 20px 0;
+        margin: 15px 0;
         border-radius: 8px;
-        font-size: 16px;
+        font-size: 15px;
         color: #333;
+        font-family: Arial, sans-serif;
     `;
-    messageDiv.innerHTML = `<strong>${icons[type]} ${message}</strong>`;
+    messageDiv.innerHTML = `${icons[type]} ${message}`;
     
-    container.insertBefore(messageDiv, container.firstChild);
+    if (container.firstChild) {
+        container.insertBefore(messageDiv, container.firstChild);
+    } else {
+        container.appendChild(messageDiv);
+    }
 }
 
-// ==================== التحقق من تسجيل الدخول ====================
 window.addEventListener("DOMContentLoaded", async () => {
+    console.log("🚀 Page loaded, starting...");
+    
     const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -80,20 +82,19 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     currentUser = user;
+    console.log(" Current user:", currentUser);
 
-    // عرض رسالة ترحيب
     const welcomeMsg = document.getElementById("welcome-message");
     const studyFieldMsg = document.getElementById("study-field-message");
     
     if (welcomeMsg && user.username) {
-        welcomeMsg.textContent = `Welcome back, ${user.username}! `;
+        welcomeMsg.textContent = `Welcome back, ${user.username}!`;
     }
 
     if (studyFieldMsg && user.study_field) {
         studyFieldMsg.textContent = `Let's study ${user.study_field} together`;
     }
 
-    // التحقق من صلاحية الـ session
     try {
         const response = await fetch(`${BACKEND_BASE}/verify-session`, {
             headers: { "Authorization": `Bearer ${token}` }
@@ -119,112 +120,128 @@ window.addEventListener("DOMContentLoaded", async () => {
         console.error("Session verification error:", err);
     }
 
-    // تحميل المحتوى الموصى به
+    console.log("📚 Loading recommended content...");
     await loadRecommendedContent();
 
-    // Search functionality
     setupSearch();
 });
 
-// ==================== تحميل المحتوى الموصى به ====================
 async function loadRecommendedContent() {
-    const rawStudy = (currentUser && currentUser.study_field) ? currentUser.study_field : "computer science";
-    const studyField = String(rawStudy).toLowerCase();
-
-    const keywords = STUDY_FIELD_KEYWORDS[studyField] || [
-        "tutorial", "course", "lecture", "learn", "education"
-    ];
-    
     const container = document.getElementById("recommended-playlists");
     if (!container) {
-        console.warn("recommended-playlists container not found");
+        console.error(" Container not found!");
         return;
     }
-    container.innerHTML = '<div class="loading">🔄 جاري تحميل المحتوى الموصى به...</div>';
 
-    let totalVideosFound = 0;
+    const rawStudy = (currentUser && currentUser.study_field) ? currentUser.study_field : "computer science";
+    const studyField = String(rawStudy).toLowerCase().trim();
+    
+    console.log(" Study field:", studyField);
+
+    const keywords = STUDY_FIELD_KEYWORDS[studyField] || ["tutorial", "course", "programming"];
+    console.log("🔑 Keywords:", keywords);
+    
+    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading recommended content...</div>';
+
+    let totalVideos = 0;
     let sectionsCreated = 0;
 
-    // جلب videos لكل keyword
-    for (const keyword of keywords) {
+    for (let i = 0; i < keywords.length; i++) {
+        const keyword = keywords[i];
+        console.log(` [${i+1}/${keywords.length}] Searching: "${keyword}"`);
+        
         try {
-            showMessage(`🔍 البحث عن: ${keyword}`, 'info');
+            showMessage(` Searching for: ${keyword}`, 'info');
             
             const result = await searchYouTube(keyword, 6);
+            console.log(` Found ${result.videos.length} videos for "${keyword}"`);
             
             if (result.message) {
                 showMessage(result.message, result.videos.length > 0 ? 'success' : 'warning');
             }
             
             if (result.videos.length > 0) {
-                const section = createPlaylistSection(keyword, result.videos);
-                if (container.querySelector('.loading')) {
+                if (sectionsCreated === 0) {
                     container.innerHTML = '';
                 }
+                
+                const section = createPlaylistSection(keyword, result.videos);
                 container.appendChild(section);
-                totalVideosFound += result.videos.length;
+                
+                totalVideos += result.videos.length;
                 sectionsCreated++;
             }
         } catch (error) {
-            console.error(`Error loading ${keyword}:`, error);
-            showMessage(`⚠️ خطأ في البحث عن: ${keyword}`, 'error');
+            console.error(` Error loading "${keyword}":`, error);
+            showMessage(` Error searching for: ${keyword}`, 'error');
         }
     }
 
+    console.log(`📊 Total: ${totalVideos} videos in ${sectionsCreated} sections`);
+
     if (sectionsCreated === 0) {
-        container.innerHTML = '';
-        showMessage(`❌ لم يتم العثور على محتوى لـ "${studyField}". جرب تغيير مجال الدراسة من الإعدادات.`, 'error');
+        container.innerHTML = `
+            <div class="no-results">
+                <h2> No Content Found</h2>
+                <p>We couldn't find educational videos for "${studyField}"</p>
+                <p> Try changing your study field in settings or use manual search</p>
+            </div>
+        `;
     } else {
-        showMessage(`✅ تم تحميل ${totalVideosFound} فيديو في ${sectionsCreated} قسم`, 'success');
+        showMessage(` Successfully loaded ${totalVideos} videos in ${sectionsCreated} sections!`, 'success');
     }
 }
 
-// ==================== البحث في YouTube ====================
 async function searchYouTube(query, maxResults = 12) {
     try {
         const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}`;
-        console.log("🔍 Searching:", url);
+        console.log(" Fetching:", url);
 
         const response = await fetch(url);
         const data = await response.json();
 
-        // عرض الرسالة من الـ Backend
+        console.log(" Response:", {
+            status: response.status,
+            ok: response.ok,
+            itemsCount: data.items ? data.items.length : 0,
+            message: data.display_message
+        });
+
         let message = data.display_message || '';
         
         if (!response.ok) {
-            console.error("Backend Error:", data);
+            console.error(" Backend Error:", data);
             return {
                 videos: [],
-                message: message || `⚠️ خطأ في البحث (${response.status})`
+                message: message || ` Search error (${response.status})`
             };
         }
 
         if (data.error) {
-            console.error("YouTube API Error:", data.error);
+            console.error(" API Error:", data.error);
             return {
                 videos: [],
-                message: message || `⚠️ ${data.error}`
+                message: message || ` ${data.error}`
             };
         }
 
         const items = data.items || [];
-        console.log(`✅ Found ${items.length} videos`);
+        console.log(` Found ${items.length} videos`);
         
         return {
             videos: items,
-            message: message || `✅ وجدنا ${items.length} فيديو`
+            message: message || ` Found ${items.length} videos`
         };
         
     } catch (error) {
-        console.error("Search error:", error);
+        console.error(" Search error:", error);
         return {
             videos: [],
-            message: `⚠️ خطأ في الاتصال: ${error.message}`
+            message: ` Connection error: ${error.message}`
         };
     }
 }
 
-// ==================== إنشاء Playlist Section ====================
 function createPlaylistSection(title, videos) {
     const section = document.createElement("section");
     section.className = "playlist-section";
@@ -243,10 +260,12 @@ function createPlaylistSection(title, videos) {
 
     section.appendChild(titleEl);
     section.appendChild(grid);
+    
+    console.log(` Created section "${title}" with ${videos.length} videos`);
+    
     return section;
 }
 
-// ==================== إنشاء Video Card ====================
 function createVideoCard(video) {
     let videoId = "";
     if (typeof video.id === "string") {
@@ -282,8 +301,11 @@ function createVideoCard(video) {
 
     if (watchBtn) {
         watchBtn.addEventListener("click", () => {
-            if (videoId) window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
-            else alert("Video ID not available.");
+            if (videoId) {
+                window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+            } else {
+                alert("Video ID not available.");
+            }
         });
     }
 
@@ -296,7 +318,6 @@ function createVideoCard(video) {
     return card;
 }
 
-// ==================== Save Video ====================
 function saveVideo(videoId, title, thumbnail, channel) {
     if (!videoId) {
         alert("Cannot save this video (no id).");
@@ -306,7 +327,7 @@ function saveVideo(videoId, title, thumbnail, channel) {
     let savedVideos = JSON.parse(localStorage.getItem("savedVideos") || "[]");
     
     if (savedVideos.find(v => v.videoId === videoId)) {
-        alert("Video already saved!");
+        alert("Video already saved! ⭐");
         return;
     }
 
@@ -320,14 +341,13 @@ function saveVideo(videoId, title, thumbnail, channel) {
 
     try {
         localStorage.setItem("savedVideos", JSON.stringify(savedVideos));
-        alert("Video saved successfully! ✓");
+        alert(" Video saved successfully!");
     } catch (e) {
-        console.error("Failed to save to localStorage:", e);
-        alert("Save failed (storage issue).");
+        console.error("Failed to save:", e);
+        alert(" Save failed (storage issue).");
     }
 }
 
-// ==================== Setup Search ====================
 function setupSearch() {
     const searchInput = document.getElementById("search-input");
     const searchBtn = document.getElementById("search-btn");
@@ -335,7 +355,7 @@ function setupSearch() {
     const searchVideos = document.getElementById("search-videos");
 
     if (!searchInput || !searchBtn) {
-        console.warn("Search inputs missing from DOM.");
+        console.warn(" Search inputs not found");
         return;
     }
 
@@ -347,17 +367,24 @@ function setupSearch() {
     async function performSearch() {
         const query = searchInput.value.trim();
         if (!query) {
-            showMessage("⚠️ من فضلك اكتب كلمة للبحث", 'warning');
+            alert(" Please write a word to search");
             return;
         }
 
         const prevText = searchBtn.innerHTML;
-        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البحث...';
+        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
         searchBtn.disabled = true;
 
-        if (searchVideos) searchVideos.innerHTML = `<div class="loading">🔄 جاري البحث عن "${query}"...</div>`;
+        if (searchVideos) {
+            searchVideos.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Searching for "${query}"...
+                </div>
+            `;
+        }
 
         try {
+            console.log(` Searching for: "${query}"`);
             const result = await searchYouTube(query, 12);
             
             if (searchVideos) searchVideos.innerHTML = "";
@@ -367,9 +394,11 @@ function setupSearch() {
                 msgDiv.style.cssText = `
                     padding: 15px;
                     margin: 10px 0;
-                    background: #f0f0f0;
+                    background: #e8f5e9;
+                    border-left: 4px solid #72c5f5ff;
                     border-radius: 8px;
-                    text-align: center;
+                    color: #2dafcfff;
+                    font-weight: 600;
                 `;
                 msgDiv.textContent = result.message;
                 if (searchVideos) searchVideos.appendChild(msgDiv);
@@ -379,17 +408,20 @@ function setupSearch() {
                 if (searchVideos) {
                     searchVideos.innerHTML += `
                         <div class="no-results">
-                            <p>❌ لم نجد نتائج لـ "${query}"</p>
-                            <p>💡 جرب:</p>
-                            <ul style="text-align: right; list-style: none;">
-                                <li>• استخدم كلمات بحث أخرى</li>
-                                <li>• أضف كلمة "tutorial" أو "course"</li>
-                                <li>• تأكد من كتابة الكلمات بشكل صحيح</li>
+                            <h3> No Results Found</h3>
+                            <p>We couldn't find any content for "${query}"</p>
+                            <p> Try:</p>
+                            <ul style="text-align: left; list-style: none; padding: 0;">
+                                <li>• Use different search words</li>
+                                <li>• Add "tutorial" or "course"</li>
+                                <li>• Make sure words are spelled correctly</li>
                             </ul>
                         </div>
                     `;
                 }
             } else {
+                console.log(` Found ${result.videos.length} videos`);
+                
                 result.videos.forEach(video => {
                     const card = createVideoCard(video);
                     if (searchVideos) searchVideos.appendChild(card);
@@ -398,14 +430,14 @@ function setupSearch() {
 
             if (searchResults) {
                 searchResults.style.display = "block";
-                try { searchResults.scrollIntoView({ behavior: "smooth" }); } catch (e) { }
+                try { searchResults.scrollIntoView({ behavior: "smooth" }); } catch (e) {}
             }
         } catch (error) {
-            console.error("Search error:", error);
+            console.error(" Search error:", error);
             if (searchVideos) {
                 searchVideos.innerHTML = `
                     <div class="no-results">
-                        <p>⚠️ حدث خطأ أثناء البحث</p>
+                        <h3> Error occurred while searching</h3>
                         <p>${error.message}</p>
                     </div>
                 `;
@@ -417,15 +449,12 @@ function setupSearch() {
     }
 }
 
-// ==================== Logout Function ====================
 const logoutBtn = document.getElementById("logout-btn");
-
 if (logoutBtn) {
     logoutBtn.addEventListener("click", async (e) => {
         e.preventDefault();
-
-        const confirmLogout = confirm("Are you sure you want to log out?");
-        if (!confirmLogout) return;
+        
+        if (!confirm("Are you sure you want to log out?")) return;
 
         const token = localStorage.getItem("authToken");
 
@@ -447,3 +476,4 @@ if (logoutBtn) {
         window.location.href = "../index.html";
     });
 }
+

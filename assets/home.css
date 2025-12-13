@@ -72,8 +72,7 @@ visibility: visible !important;
     font-size: 1.2rem;
     font-weight: 600;
 }
-.side-body ul li:hover{
-    text-decoration: underline;
+.side-body ul li:hover , .side-body ul li:active{
     background-color: rgba(117, 173, 236, 0.349);
     border-radius: 10px;
 }
