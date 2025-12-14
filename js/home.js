@@ -370,7 +370,6 @@ function setupSearch() {
         }
 
         const prevText = searchBtn.innerHTML;
-        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
         searchBtn.disabled = true;
 
         if (searchVideos) {
@@ -407,16 +406,6 @@ function setupSearch() {
             } else {
                 console.log(`✅ Found ${videos.length} videos`);
                 
-                const successMsg = document.createElement('div');
-                successMsg.style.cssText = `
-                    background: #d4edda;
-                    border-left: 4px solid #28a745;
-                    padding: 15px;
-                    margin-bottom: 20px;
-                    border-radius: 8px;
-                    color: #155724;
-                    font-weight: 600;
-                `;
                 successMsg.textContent = `✅ Found ${videos.length} videos for "${query}"`;
                 searchVideos.appendChild(successMsg);
                 
@@ -439,11 +428,11 @@ function setupSearch() {
                 }, 100);
             }
         } catch (error) {
-            console.error("❌ Search error:", error);
+            console.error(" Search error:", error);
             if (searchVideos) {
                 searchVideos.innerHTML = `
                     <div class="no-results">
-                        <h3>⚠️ Error occurred</h3>
+                        <h3> Error occurred</h3>
                         <p>${error.message}</p>
                     </div>
                 `;
