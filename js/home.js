@@ -408,10 +408,12 @@ function setupSearch() {
                 
                 const successMsg = document.createElement('div');
                 successMsg.style.cssText = `
-                display:flex;
+                    background: #d4edda;
+                    border-left: 4px solid #28a745;
                     padding: 15px;
                     margin-bottom: 20px;
                     border-radius: 8px;
+                    color: #155724;
                     font-weight: 600;
                 `;
                 successMsg.textContent = `✅ Found ${videos.length} videos for "${query}"`;
