@@ -24,10 +24,9 @@ function saveNotesOffline(notes) { localStorage.setItem(OFFLINE_NOTES_KEY, JSON.
 function loadNotesOffline() { return JSON.parse(localStorage.getItem(OFFLINE_NOTES_KEY) || '[]'); }
 function addToOfflineQueue(action) {
     const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
-    // تجنب إضافة عمليات مكررة إذا كانت غير ضرورية (تحديثات مثلاً)
     const existingIndex = queue.findIndex(a => a.type === action.type && a.note && a.note.id === action.note.id);
     if (action.type === 'update' && existingIndex !== -1) {
-        queue[existingIndex] = action; // استبدال التحديث القديم بالتحديث الأحدث
+        queue[existingIndex] = action; 
     } else {
         queue.push(action);
     }
@@ -61,10 +60,9 @@ async function fetchNotes() {
         if (res.status === 401) { clearAuthToken(); showError('Session expired. Please login again.'); setTimeout(()=>window.location.href='../index.html',2000); return; }
         const data = await res.json();
         
-        // 🚨 تحويل التاريخ من Firestore إلى كائن Date للفرز المحلي إذا لزم الأمر
         notes = (data.notes || []).map(n => ({
-             ...n, 
-             createdAt: n.createdAt ? new Date(n.createdAt) : new Date() 
+            ...n, 
+            createdAt: n.createdAt ? new Date(n.createdAt) : new Date() 
         }));
         
         saveNotesOffline(notes);
@@ -75,7 +73,6 @@ async function fetchNotes() {
 
 // ================= CRUD (تعديل جذري) =================
 async function saveNote(note) {
-    // يتم الإضافة محلياً أولاً
     notes.unshift(note); 
     saveNotesOffline(notes);
     renderNotes();
@@ -93,13 +90,12 @@ async function saveNote(note) {
         });
         
         if (res.ok) {
-             const saved = await res.json();
-             // استبدال الملاحظة المحلية بالنسخة التي جاءت من السيرفر (مع ID حقيقي)
-             const index = notes.findIndex(n => n.id === note.id);
-             if (index !== -1) { notes[index] = saved.note; }
-             saveNotesOffline(notes);
-             renderNotes();
-             return saved.note;
+            const saved = await res.json();
+            const index = notes.findIndex(n => n.id === note.id);
+            if (index !== -1) { notes[index] = saved.note; }
+            saveNotesOffline(notes);
+            renderNotes();
+            return saved.note;
         } else {
             console.error("Server creation failed:", res.status);
             addToOfflineQueue({type:'create',note});
@@ -113,7 +109,6 @@ async function saveNote(note) {
 }
 
 async function updateNote(note) {
-    // 1. تحديث المصفوفة المحلية أولاً
     const index = notes.findIndex(n => n.id === note.id);
     if (index !== -1) { notes[index] = note; }
     saveNotesOffline(notes);
@@ -128,8 +123,8 @@ async function updateNote(note) {
         });
         
         if (res.status === 404 || !res.ok) {
-             console.error(`Update failed: Note ${note.id} status ${res.status}. Adding to queue.`);
-             addToOfflineQueue({type:'update',note});
+            console.error(`Update failed: Note ${note.id} status ${res.status}. Adding to queue.`);
+            addToOfflineQueue({type:'update',note});
         }
     } catch(err) {
         console.error("Network error during update:", err);
@@ -138,14 +133,10 @@ async function updateNote(note) {
 }
 
 async function deleteNote(noteId) {
-    // 🚨 الحل لمشكلة undefined: التأكد من وجود ID وإتمام الحذف المحلي دائماً
-    
-    // 1. الحذف المحلي الفوري وتحديث الواجهة
-    notes = notes.filter(n=>n.id !== noteId);
+        notes = notes.filter(n=>n.id !== noteId);
     saveNotesOffline(notes);
     renderNotes();
-    
-    // 2. إذا لم يكن هناك ID أو كنا غير متصلين، سنضيفها إلى قائمة الانتظار للمحاولة لاحقاً
+    updateNote();    
     if (!noteId) {
         console.error("Attempted to delete a note without a valid ID. Skipping server request.");
         return;
@@ -193,7 +184,7 @@ function renderNotes() {
 
         // Delete button
         const del = document.createElement('button'); del.textContent='✖'; 
-        // 🚨 تمرير الـ ID إلى دالة الحذف مباشرة
+        del.className="button",
         del.onclick = async()=>{ await deleteNote(note.id); }; 
         controls.appendChild(del);
 

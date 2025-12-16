@@ -15,6 +15,125 @@
     <link rel="shortcut icon" href="./imgs/education.png" type="image/x-icon">
 </head>
 <body>
+    <!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendar</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .calendar-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 1rem;
+    background: var(--color-bg-alt);
+    border-radius: 8px;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+  }
+
+  .calendar-day {
+    background: var(--color-bg-light);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .calendar-day:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    background: var(--color-accent-light);
+  }
+
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    top:0; left:0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .modal-content {
+    background: var(--color-bg-light);
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    text-align: right;
+    position: relative;
+  }
+
+  .modal-content h3 {
+    margin-top: 0;
+    color: var(--color-heading);
+  }
+
+  .modal-content input, 
+  .modal-content textarea {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-family: var(--font-body);
+  }
+
+  .modal-content button {
+    background: var(--color-primary-dark);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+  }
+
+  .modal-content button:hover {
+    background: var(--color-accent-dark);
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="calendar-container">
+    <div class="calendar-grid" id="calendarGrid">
+      <!-- الأيام هتتولد بالـ JS -->
+    </div>
+  </div>
+
+  <!-- Modal لإضافة الحدث -->
+  <div class="modal" id="eventModal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeModal">&times;</span>
+      <h3>إضافة حدث</h3>
+      <input type="text" id="eventTitle" placeholder="عنوان الحدث">
+      <input type="datetime-local" id="eventStart">
+      <input type="datetime-local" id="eventEnd">
+      <textarea id="eventDesc" placeholder="وصف الحدث (اختياري)"></textarea>
+      <button id="saveEventBtn">حفظ الحدث</button>
+    </div>
+  </div>
+</main>
+
     <script src="../js/bootstrap.bundle.min.js"></script>
     <script src="../js/theme.js"></script>
     <script src="../js/main.js"></script>

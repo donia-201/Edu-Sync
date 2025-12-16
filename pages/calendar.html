@@ -31,6 +31,26 @@
             </div>
         </div>
     </nav>
+
+<main>
+  <div class="calendar-container">
+    <div class="calendar-grid" id="calendarGrid">
+    </div>
+  </div>
+
+  <div class="modal" id="eventModal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeModal">&times;</span>
+      <h3> Add Event</h3>
+      <input type="text" id="eventTitle" placeholder=" Event title... ">
+      <input type="datetime-local" id="eventStart">
+      <input type="datetime-local" id="eventEnd">
+      <textarea id="eventDesc" placeholder="  Event description..."></textarea>
+      <button id="saveEventBtn">حفظ الحدث</button>
+    </div>
+  </div>
+</main>
+<script src="../js/calendar.js"
   <script src="../js/bootstrap.bundle.min.js"></script>
     <script src="../js/theme.js"></script>
     <script src="../js/main.js"></script>
