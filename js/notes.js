@@ -1,3 +1,4 @@
+// ========================= NOTES.JS (FRONTEND) =========================
 const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
 
 let notes = [];
@@ -23,7 +24,13 @@ function saveNotesOffline(notes) { localStorage.setItem(OFFLINE_NOTES_KEY, JSON.
 function loadNotesOffline() { return JSON.parse(localStorage.getItem(OFFLINE_NOTES_KEY) || '[]'); }
 function addToOfflineQueue(action) {
     const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
-    queue.push(action);
+    // تجنب إضافة عمليات مكررة إذا كانت غير ضرورية (تحديثات مثلاً)
+    const existingIndex = queue.findIndex(a => a.type === action.type && a.note && a.note.id === action.note.id);
+    if (action.type === 'update' && existingIndex !== -1) {
+        queue[existingIndex] = action; // استبدال التحديث القديم بالتحديث الأحدث
+    } else {
+        queue.push(action);
+    }
     localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
 }
 
@@ -53,70 +60,141 @@ async function fetchNotes() {
         const res = await fetch(`${API_BASE_URL}/api/notes`, { headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}});
         if (res.status === 401) { clearAuthToken(); showError('Session expired. Please login again.'); setTimeout(()=>window.location.href='../index.html',2000); return; }
         const data = await res.json();
-        notes = data.notes || [];
+        
+        // 🚨 تحويل التاريخ من Firestore إلى كائن Date للفرز المحلي إذا لزم الأمر
+        notes = (data.notes || []).map(n => ({
+             ...n, 
+             createdAt: n.createdAt ? new Date(n.createdAt) : new Date() 
+        }));
+        
         saveNotesOffline(notes);
         renderNotes();
 
     } catch(err) { console.error(err); showError('Failed to load notes.'); }
 }
 
-// ================= CRUD =================
+// ================= CRUD (تعديل جذري) =================
 async function saveNote(note) {
-    notes.unshift(note);
-    if (!navigator.onLine) { saveNotesOffline(notes); addToOfflineQueue({type:'create',note}); renderNotes(); return note; }
-    
-    const res = await fetch(`${API_BASE_URL}/api/notes`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, body:JSON.stringify(note) });
-    const saved = await res.json();
-    
-    const index = notes.findIndex(n => n.id === note.id);
-    if (index !== -1) {
-        notes[index] = saved;
-    } else {
-        notes.unshift(saved);
-    }
-    
+    // يتم الإضافة محلياً أولاً
+    notes.unshift(note); 
     saveNotesOffline(notes);
     renderNotes();
-    return saved;
+    
+    if (!navigator.onLine) { 
+        addToOfflineQueue({type:'create',note}); 
+        return note; 
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/notes`, { 
+            method:'POST', 
+            headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, 
+            body:JSON.stringify(note) 
+        });
+        
+        if (res.ok) {
+             const saved = await res.json();
+             // استبدال الملاحظة المحلية بالنسخة التي جاءت من السيرفر (مع ID حقيقي)
+             const index = notes.findIndex(n => n.id === note.id);
+             if (index !== -1) { notes[index] = saved.note; }
+             saveNotesOffline(notes);
+             renderNotes();
+             return saved.note;
+        } else {
+            console.error("Server creation failed:", res.status);
+            addToOfflineQueue({type:'create',note});
+            return note;
+        }
+    } catch(err) {
+        console.error("Network error during creation:", err);
+        addToOfflineQueue({type:'create',note});
+        return note;
+    }
 }
 
 async function updateNote(note) {
+    // 1. تحديث المصفوفة المحلية أولاً
     const index = notes.findIndex(n => n.id === note.id);
-    if (index !== -1) {
-        notes[index] = note;
-    }
-    
-    if (!navigator.onLine) { saveNotesOffline(notes); addToOfflineQueue({type:'update',note}); return; }
-    await fetch(`${API_BASE_URL}/api/notes/${note.id}`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, body:JSON.stringify(note) });
+    if (index !== -1) { notes[index] = note; }
     saveNotesOffline(notes);
+    
+    if (!navigator.onLine) { addToOfflineQueue({type:'update',note}); return; }
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/notes/${note.id}`, { 
+            method:'PUT', 
+            headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, 
+            body:JSON.stringify(note) 
+        });
+        
+        if (res.status === 404 || !res.ok) {
+             console.error(`Update failed: Note ${note.id} status ${res.status}. Adding to queue.`);
+             addToOfflineQueue({type:'update',note});
+        }
+    } catch(err) {
+        console.error("Network error during update:", err);
+        addToOfflineQueue({type:'update',note});
+    }
 }
 
 async function deleteNote(noteId) {
-    notes = notes.filter(n=>n.id!==noteId);
-    if (!navigator.onLine) { saveNotesOffline(notes); addToOfflineQueue({type:'delete',id:noteId}); renderNotes(); return; }
-    await fetch(`${API_BASE_URL}/api/notes/${noteId}`, { method:'DELETE', headers:{'Authorization':`Bearer ${getAuthToken()}`} });
+    // 🚨 الحل لمشكلة undefined: التأكد من وجود ID وإتمام الحذف المحلي دائماً
+    
+    // 1. الحذف المحلي الفوري وتحديث الواجهة
+    notes = notes.filter(n=>n.id !== noteId);
     saveNotesOffline(notes);
     renderNotes();
+    
+    // 2. إذا لم يكن هناك ID أو كنا غير متصلين، سنضيفها إلى قائمة الانتظار للمحاولة لاحقاً
+    if (!noteId) {
+        console.error("Attempted to delete a note without a valid ID. Skipping server request.");
+        return;
+    }
+    if (!navigator.onLine) { 
+        addToOfflineQueue({type:'delete',id:noteId});
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/notes/${noteId}`, { 
+            method:'DELETE', 
+            headers:{'Authorization':`Bearer ${getAuthToken()}`} 
+        });
+        
+        if (res.status === 404) {
+            console.log(`Note ${noteId} not found on server, assuming already deleted.`);
+        } else if (!res.ok) {
+            console.error(`Delete failed with status: ${res.status}. Adding to queue.`);
+            addToOfflineQueue({type:'delete',id:noteId});
+        }
+    } catch(err) {
+        console.error("Network error during delete:", err);
+        addToOfflineQueue({type:'delete',id:noteId});
+    }
 }
 
 // ================= RENDER =================
-function filterNotes() { if(!searchTerm) return notes; return notes.filter(n=>n.content && n.content.toLowerCase().includes(searchTerm.toLowerCase())); }
+function filterNotes() { 
+    if(!searchTerm) return notes; 
+    return notes.filter(n=> n.content && n.content.toLowerCase().includes(searchTerm.toLowerCase())); 
+}
 
 function renderNotes() {
     const filtered = filterNotes();
-    notesContainer.innerHTML = filtered.length? '':'<div class="loading">No notes found.</div>';
+    notesContainer.innerHTML = filtered.length ? '' : '<div class="loading">No notes found.</div>';
 
     filtered.forEach(note => {
         const card = document.createElement('div');
         card.className='note'; card.dataset.id=note.id; card.draggable=true; 
-        
-        card.style.backgroundColor = note.color || '#fff'; 
+        card.style.backgroundColor=note.color||'#fff';
 
         // CONTROLS
         const controls = document.createElement('div'); controls.className='note-controls';
 
         // Delete button
-        const del = document.createElement('button'); del.textContent='✖'; del.onclick=async()=>{ await deleteNote(note.id); };
+        const del = document.createElement('button'); del.textContent='✖'; 
+        // 🚨 تمرير الـ ID إلى دالة الحذف مباشرة
+        del.onclick = async()=>{ await deleteNote(note.id); }; 
         controls.appendChild(del);
 
         // Color picker
@@ -135,9 +213,9 @@ function renderNotes() {
         // ================= CONTENT RENDERING (Task/Note) =================
 
         if(note.type === 'task') {
-            
             const label = document.createElement('label'); 
             label.className = 'task-label';
+            
             const checkbox = document.createElement('input'); 
             checkbox.type = 'checkbox'; 
             checkbox.checked = note.checked || false;
@@ -166,7 +244,8 @@ function renderNotes() {
             const content = document.createElement('div'); 
             content.className = 'note-content'; 
             content.contentEditable = true; 
-            content.innerText = note.content || 'New note';             
+            content.innerText = note.content || 'New note';
+            
             content.onblur = () => { 
                 const updatedContent = content.innerText.trim() || 'New note';
                 if (note.content !== updatedContent) {
@@ -222,11 +301,9 @@ window.addEventListener('online',async()=>{
     
     for(const action of queue){
         if(action.type==='create') {
-            const existingNoteIndex = notes.findIndex(n => n.id === action.note.id);
-            if (existingNoteIndex !== -1) {
-                notes.splice(existingNoteIndex, 1); 
-            }
-            await saveNote(action.note); 
+             // إزالة النسخة المحلية غير المزامنة (التي تحمل الـ uuid) قبل إعادة إنشائها
+            notes = notes.filter(n => n.id !== action.note.id);
+            await saveNote(action.note);
         }
         else if(action.type==='update') await updateNote(action.note);
         else if(action.type==='delete') await deleteNote(action.id);
