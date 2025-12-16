@@ -18,6 +18,7 @@
 }
 
 body{
+      position: relative;
   background-color: var(--color-bg-light);
   font-family: var(--font-body);
   color: var(--color-text-main);
@@ -27,8 +28,11 @@ body{
 
 /* nav‑bar */
 .navbar{
-  flex-grow: 1;
+flex-grow: 1;
 justify-content: space-between !important;
+position: sticky;
+scroll-behavior: smooth;
+
 }
 .container{
   display:flex;
