@@ -17,6 +17,54 @@
   --font-heading: 'Caveat Brush', cursive !important;
   --font-body: 'Playfair Display', serif !important;
 }
+
+body{
+      position: relative;
+  background-color: var(--color-bg-light);
+  font-family: var(--font-body);
+  color: var(--color-text-main);
+  margin: 0;
+  padding: 0;
+}
+
+/* nav‑bar */
+.navbar{
+flex-grow: 1;
+justify-content: space-between !important;
+position: sticky;
+scroll-behavior: smooth;
+
+}
+.container{
+  display:flex;
+  flex-grow:1 ;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 10px -4px rgba(0, 0, 0, 0.1);
+
+}
+.title {
+  font-family: var(--font-heading);
+  font-size: 2.6rem;
+  font-weight: bold;
+}
+.title1 {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-weight: bold;
+}
+.navbar-brand.title {
+  font-size: 2.6rem;
+}
+.navbar-nav .nav-link {
+  font-size: 1.1rem;
+  padding: 0 10px;
+  color: var(--color-text-main);
+}
+.navbar-nav .nav-link:hover {
+  color: var(--color-primary-dark);
+}
+
   .calendar-container {
     max-width: 900px;
     margin: 2rem auto;
