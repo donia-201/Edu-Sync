@@ -15,15 +15,15 @@ const searchBtn = document.getElementById('search-btn');
 
 // ================= AUTH HELPERS =================
 function getAuthToken() {
-    return localStorage.getItem('session_token');
+    return localStorage.getItem('authToken');
 }
 
 function setAuthToken(token) {
-    if (token) localStorage.setItem('session_token', token);
+    if (token) localStorage.setItem('authToken', token);
 }
 
 function clearAuthToken() {
-    localStorage.removeItem('session_token');
+    localStorage.removeItem('authToken');
 }
 
 // ================= OFFLINE HELPERS =================
@@ -229,17 +229,24 @@ addNoteBtn.onclick = async () => {
     await saveNote(note);
 };
 
-addTaskBtn.onclick = async () => {
-    const task = {
+addNoteBtn.onclick = async () => {
+    const note = {
         id: uuid(),
-        type: 'task',
-        content: 'New task',
-        checked: false,
+        type: 'note',
+        content: 'New note',
         color: '#fff',
         createdAt: new Date().toISOString()
     };
-    await saveNote(task);
+
+    const saved = await saveNote(note);
+    if (saved) {
+        notes.unshift(note);
+        saveNotesOffline(notes);
+        renderNotes();
+    }
 };
+
+
 
 searchInput.oninput = e => {
     searchTerm = e.target.value;
