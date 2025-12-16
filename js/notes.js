@@ -62,31 +62,45 @@ async function fetchNotes() {
 
 // ================= CRUD =================
 async function saveNote(note) {
-    if (!navigator.onLine) { notes.unshift(note); saveNotesOffline(notes); addToOfflineQueue({type:'create',note}); renderNotes(); return note; }
+    notes.unshift(note);
+    if (!navigator.onLine) { saveNotesOffline(notes); addToOfflineQueue({type:'create',note}); renderNotes(); return note; }
+    
     const res = await fetch(`${API_BASE_URL}/api/notes`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, body:JSON.stringify(note) });
     const saved = await res.json();
-    notes.unshift(saved);
+    
+    const index = notes.findIndex(n => n.id === note.id);
+    if (index !== -1) {
+        notes[index] = saved;
+    } else {
+        notes.unshift(saved);
+    }
+    
     saveNotesOffline(notes);
     renderNotes();
     return saved;
 }
 
 async function updateNote(note) {
+    const index = notes.findIndex(n => n.id === note.id);
+    if (index !== -1) {
+        notes[index] = note;
+    }
+    
     if (!navigator.onLine) { saveNotesOffline(notes); addToOfflineQueue({type:'update',note}); return; }
     await fetch(`${API_BASE_URL}/api/notes/${note.id}`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, body:JSON.stringify(note) });
     saveNotesOffline(notes);
 }
 
 async function deleteNote(noteId) {
-    if (!navigator.onLine) { notes = notes.filter(n=>n.id!==noteId); saveNotesOffline(notes); addToOfflineQueue({type:'delete',id:noteId}); renderNotes(); return; }
-    await fetch(`${API_BASE_URL}/api/notes/${noteId}`, { method:'DELETE', headers:{'Authorization':`Bearer ${getAuthToken()}`} });
     notes = notes.filter(n=>n.id!==noteId);
+    if (!navigator.onLine) { saveNotesOffline(notes); addToOfflineQueue({type:'delete',id:noteId}); renderNotes(); return; }
+    await fetch(`${API_BASE_URL}/api/notes/${noteId}`, { method:'DELETE', headers:{'Authorization':`Bearer ${getAuthToken()}`} });
     saveNotesOffline(notes);
     renderNotes();
 }
 
 // ================= RENDER =================
-function filterNotes() { if(!searchTerm) return notes; return notes.filter(n=>n.content.toLowerCase().includes(searchTerm.toLowerCase())); }
+function filterNotes() { if(!searchTerm) return notes; return notes.filter(n=>n.content && n.content.toLowerCase().includes(searchTerm.toLowerCase())); }
 
 function renderNotes() {
     const filtered = filterNotes();
@@ -94,7 +108,9 @@ function renderNotes() {
 
     filtered.forEach(note => {
         const card = document.createElement('div');
-        card.className='note'; card.dataset.id=note.id; card.draggable=true; card.style.backgroundColor=note.color||'#fff';
+        card.className='note'; card.dataset.id=note.id; card.draggable=true; 
+        
+        card.style.backgroundColor = note.color || '#fff'; 
 
         // CONTROLS
         const controls = document.createElement('div'); controls.className='note-controls';
@@ -107,28 +123,60 @@ function renderNotes() {
         const colorInput = document.createElement('input');
         colorInput.type='color';
         colorInput.value=note.color||'#ffffff';
-        colorInput.oninput=()=>{ note.color=colorInput.value; card.style.backgroundColor=note.color; updateNote(note); };
+        colorInput.oninput=()=>{ 
+            note.color=colorInput.value; 
+            card.style.backgroundColor=note.color; 
+            updateNote(note); 
+        };
         controls.appendChild(colorInput);
 
         card.appendChild(controls);
+        
+        // ================= CONTENT RENDERING (Task/Note) =================
 
-        // CONTENT
-        const content = document.createElement('div'); content.className='note-content'; content.contentEditable=true;
-
-        if(note.type==='task'){
-            const label = document.createElement('label'); label.className='task-label';
-            const checkbox = document.createElement('input'); checkbox.type='checkbox'; checkbox.checked=note.checked||false;
-            checkbox.onchange=()=>{ note.checked=checkbox.checked; updateNote(note); };
-            content.innerText=note.content;
+        if(note.type === 'task') {
+            
+            const label = document.createElement('label'); 
+            label.className = 'task-label';
+            const checkbox = document.createElement('input'); 
+            checkbox.type = 'checkbox'; 
+            checkbox.checked = note.checked || false;
+            checkbox.onchange = () => { 
+                note.checked = checkbox.checked; 
+                updateNote(note); 
+            };
+            
+            const taskText = document.createElement('span'); 
+            taskText.contentEditable = true; 
+            taskText.innerText = note.content || 'New task'; 
+            
+            taskText.onblur = () => { 
+                const updatedContent = taskText.innerText.trim() || 'New task';
+                if (note.content !== updatedContent) {
+                    note.content = updatedContent;
+                    updateNote(note);
+                }
+            };
+            
             label.appendChild(checkbox);
-            label.appendChild(content);
+            label.appendChild(taskText);
             card.appendChild(label);
+            
         } else {
-            content.innerText=note.content;
+            const content = document.createElement('div'); 
+            content.className = 'note-content'; 
+            content.contentEditable = true; 
+            content.innerText = note.content || 'New note';             
+            content.onblur = () => { 
+                const updatedContent = content.innerText.trim() || 'New note';
+                if (note.content !== updatedContent) {
+                    note.content = updatedContent;
+                    updateNote(note);
+                }
+            };
+            
             card.appendChild(content);
         }
-
-        content.onblur=()=>{ note.content=content.innerText||'New note'; updateNote(note); };
 
         // DRAG EVENTS
         card.addEventListener('dragstart',e=>{ draggedElement=e.currentTarget; e.currentTarget.classList.add('dragging'); });
@@ -170,12 +218,20 @@ searchBtn.onclick=()=>searchInput.focus();
 // ================= SYNC OFFLINE =================
 window.addEventListener('online',async()=>{
     const queue=JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)||'[]');
+    localStorage.removeItem(OFFLINE_QUEUE_KEY); 
+    
     for(const action of queue){
-        if(action.type==='create') await saveNote(action.note);
-        if(action.type==='update') await updateNote(action.note);
-        if(action.type==='delete') await deleteNote(action.id);
+        if(action.type==='create') {
+            const existingNoteIndex = notes.findIndex(n => n.id === action.note.id);
+            if (existingNoteIndex !== -1) {
+                notes.splice(existingNoteIndex, 1); 
+            }
+            await saveNote(action.note); 
+        }
+        else if(action.type==='update') await updateNote(action.note);
+        else if(action.type==='delete') await deleteNote(action.id);
     }
-    localStorage.removeItem(OFFLINE_QUEUE_KEY);
+    
     fetchNotes();
 });
 
