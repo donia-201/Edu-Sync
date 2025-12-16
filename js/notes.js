@@ -226,17 +226,6 @@ addNoteBtn.onclick = async () => {
         color: '#fff',
         createdAt: new Date().toISOString()
     };
-    await saveNote(note);
-};
-
-addNoteBtn.onclick = async () => {
-    const note = {
-        id: uuid(),
-        type: 'note',
-        content: 'New note',
-        color: '#fff',
-        createdAt: new Date().toISOString()
-    };
 
     const saved = await saveNote(note);
     if (saved) {
@@ -247,7 +236,22 @@ addNoteBtn.onclick = async () => {
 };
 
 
+addTaskBtn.onclick = async () => {
+    const task = {
+        id: uuid(),
+        type: 'task',
+        content: 'New task',
+        checked: false,
+        color: '#fff',
+        createdAt: new Date().toISOString()
+    };
 
+    notes.unshift(task);
+    renderNotes();
+    await saveNote(task);
+};
+
+//
 searchInput.oninput = e => {
     searchTerm = e.target.value;
     renderNotes();
