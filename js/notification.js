@@ -3,6 +3,56 @@
         const emptyState = document.getElementById('emptyState');
         const clearAllBtn = document.getElementById('clearAllBtn');
 
+
+        const container = document.getElementById("notificationsContainer");
+const authToken = localStorage.getItem("authToken");
+
+async function fetchNotifications() {
+  const res = await fetch(
+    "https://edu-sync-back-end-production.up.railway.app/api/notifications",
+    {
+      headers: {
+        "Authorization": `Bearer ${authToken}`
+      }
+    }
+  );
+
+  const data = await res.json();
+
+  if (!data.success) return;
+
+  container.innerHTML = "";
+
+  data.notifications.forEach(n => {
+    const div = document.createElement("div");
+    div.className = `notification ${n.is_read ? "read" : "unread"}`;
+
+    div.innerHTML = `
+      <h4>${n.title}</h4>
+      <p>${n.message}</p>
+      <small>${new Date(n.created_at).toLocaleString()}</small>
+    `;
+
+    div.addEventListener("click", () => markAsRead(n.id));
+    container.appendChild(div);
+  });
+}
+
+async function markAsRead(id) {
+await fetch(
+    `https://edu-sync-back-end-production.up.railway.app/api/notifications/${id}/read`,
+    {
+    method: "PUT",
+    headers: {
+        "Authorization": `Bearer ${authToken}`
+    }
+    }
+    );
+    fetchNotifications();
+}
+
+fetchNotifications();
+
         function loadNotifications() {
             try {
                 const notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '[]');
