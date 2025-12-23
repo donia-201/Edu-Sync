@@ -184,6 +184,7 @@ function renderNotes() {
 
         // Delete button
         const del = document.createElement('button'); del.textContent='✖'; 
+        del.className="delete-btn";
         del.className="button",
         del.onclick = async()=>{ await deleteNote(note.id); }; 
         controls.appendChild(del);
@@ -191,6 +192,7 @@ function renderNotes() {
         // Color picker
         const colorInput = document.createElement('input');
         colorInput.type='color';
+        colorInput.className="color-btn"
         colorInput.value=note.color||'#ffffff';
         colorInput.oninput=()=>{ 
             note.color=colorInput.value; 
@@ -292,7 +294,6 @@ window.addEventListener('online',async()=>{
     
     for(const action of queue){
         if(action.type==='create') {
-             // إزالة النسخة المحلية غير المزامنة (التي تحمل الـ uuid) قبل إعادة إنشائها
             notes = notes.filter(n => n.id !== action.note.id);
             await saveNote(action.note);
         }

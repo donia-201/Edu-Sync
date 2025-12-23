@@ -1,5 +1,5 @@
 const calendarGrid = document.getElementById('calendarGrid');
-const modal = document.getElementById('eventModal');
+const modal = document.getElementById('eventModal' );
 const closeModal = document.getElementById('closeModal');
 const saveEventBtn = document.getElementById('saveEventBtn');
 
@@ -10,7 +10,6 @@ const eventDescInput = document.getElementById('eventDesc');
 
 const token = localStorage.getItem('token');
 
-// توليد أيام الشهر
 for(let i=1;i<=30;i++){
   const day = document.createElement('div');
   day.classList.add('calendar-day');
@@ -19,11 +18,9 @@ for(let i=1;i<=30;i++){
   calendarGrid.appendChild(day);
 }
 
-// غلق المودال
 closeModal.addEventListener('click', () => modal.style.display = 'none');
 window.addEventListener('click', e => { if(e.target===modal) modal.style.display='none'; });
 
-// حفظ الحدث
 saveEventBtn.addEventListener('click', async () => {
   const title = eventTitleInput.value;
   const start = eventStartInput.value;
@@ -31,7 +28,7 @@ saveEventBtn.addEventListener('click', async () => {
   const desc = eventDescInput.value;
 
   if(!title || !start || !end){
-    alert("رجاءً املأ الحقول المطلوبة");
+    alert(" please, fill required fieldes");
     return;
   }
 
@@ -53,10 +50,9 @@ saveEventBtn.addEventListener('click', async () => {
 
     const data = await response.json();
     if(data.success){
-      alert('تم حفظ الحدث بنجاح!');
+      alert(' Event saved successfully !');
       modal.style.display = 'none';
 
-      // تفريغ الحقول
       eventTitleInput.value = '';
       eventStartInput.value = '';
       eventEndInput.value = '';
@@ -74,11 +70,11 @@ saveEventBtn.addEventListener('click', async () => {
       localStorage.setItem('newEvents', JSON.stringify(tempEvents));
 
     } else {
-      alert('فشل حفظ الحدث: ' + data.msg);
+      alert('  Fialed to save the Event: ' + data.msg);
     }
 
   } catch(err){
     console.error(err);
-    alert('حدث خطأ في الاتصال بالسيرفر.');
+    alert(' error in connect with server!');
   }
 });

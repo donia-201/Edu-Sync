@@ -71,6 +71,7 @@ scroll-behavior: smooth;
     padding: 1rem;
     background: var(--color-bg-alt);
     border-radius: 8px;
+    flex-wrap: wrap;
   }
 
   .calendar-grid {
