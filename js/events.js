@@ -1,6 +1,6 @@
         const eventsContainer = document.getElementById('eventsContainer');
         const syncStatus = document.getElementById('syncStatus');
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
 
         // دالة لعرض حالة المزامنة
         function updateSyncStatus(status, message) {
@@ -18,13 +18,13 @@
             try {
                 updateSyncStatus('syncing', 'جاري المزامنة...');
 
-                if (!token) {
+                if (!authToken) {
                     throw new Error('لا يوجد توكن. يرجى تسجيل الدخول أولاً');
                 }
 
                 const response = await fetch('https://edu-sync-back-end-production.up.railway.app/api/events', {
                     headers: { 
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -99,7 +99,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${authToken}`
                         },
                         body: JSON.stringify({
                             title: event.title,
@@ -211,7 +211,7 @@
                 const response = await fetch(`https://edu-sync-back-end-production.up.railway.app/api/events/${id}`, {
                     method: 'DELETE',
                     headers: { 
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -240,7 +240,7 @@
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify(data)
                 });

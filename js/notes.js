@@ -1,4 +1,4 @@
-// ========================= NOTES.JS (FRONTEND) =========================
+// ========================= NOTES.JS (FIXED) =========================
 const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
 
 let notes = [];
@@ -12,31 +12,51 @@ const searchInput = document.getElementById('search-notes');
 const searchBtn = document.getElementById('search-btn');
 
 // ================= AUTH HELPERS =================
-function getAuthToken() { return localStorage.getItem('authToken'); }
-function setAuthToken(token) { if (token) localStorage.setItem('authToken', token); }
-function clearAuthToken() { localStorage.removeItem('authToken'); }
+function getAuthToken() { 
+    return localStorage.getItem('authToken');
+}
+
+function setAuthToken(token) { 
+    if (token) localStorage.setItem('authToken', token); 
+}
+
+function clearAuthToken() { 
+    localStorage.removeItem('authToken'); 
+}
 
 // ================= OFFLINE HELPERS =================
 const OFFLINE_NOTES_KEY = 'offline_notes';
 const OFFLINE_QUEUE_KEY = 'offline_queue';
 
-function saveNotesOffline(notes) { localStorage.setItem(OFFLINE_NOTES_KEY, JSON.stringify(notes)); }
-function loadNotesOffline() { return JSON.parse(localStorage.getItem(OFFLINE_NOTES_KEY) || '[]'); }
+function saveNotesOffline(notes) { 
+    localStorage.setItem(OFFLINE_NOTES_KEY, JSON.stringify(notes)); 
+}
+
+function loadNotesOffline() { 
+    return JSON.parse(localStorage.getItem(OFFLINE_NOTES_KEY) || '[]'); 
+}
+
 function addToOfflineQueue(action) {
     const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
     const existingIndex = queue.findIndex(a => a.type === action.type && a.note && a.note.id === action.note.id);
+    
     if (action.type === 'update' && existingIndex !== -1) {
         queue[existingIndex] = action; 
     } else {
         queue.push(action);
     }
+    
     localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
 }
 
 // ================= HELPERS =================
 function uuid() { return crypto.randomUUID(); }
-function showError(message) { notesContainer.innerHTML = `<div class="error-message">${message}</div>`; }
-function showLoading() { notesContainer.innerHTML = '<div class="loading">Loading notes...</div>'; }
+function showError(message) { 
+    notesContainer.innerHTML = `<div class="error-message" style="text-align:center;padding:20px;color:#dc3545;">${message}</div>`; 
+}
+function showLoading() { 
+    notesContainer.innerHTML = '<div class="loading" style="text-align:center;padding:20px;">Loading notes...</div>'; 
+}
 
 // ================= FETCH NOTES =================
 async function fetchNotes() {
@@ -45,10 +65,17 @@ async function fetchNotes() {
 
         const urlParams = new URLSearchParams(window.location.search);
         const urlToken = urlParams.get('token');
-        if (urlToken) { setAuthToken(urlToken); window.history.replaceState({}, document.title, window.location.pathname); }
+        if (urlToken) { 
+            setAuthToken(urlToken); 
+            window.history.replaceState({}, document.title, window.location.pathname); 
+        }
 
         const token = getAuthToken();
-        if (!token) { showError('Please login first. Redirecting...'); setTimeout(() => window.location.href='../index.html', 2000); return; }
+        if (!token) { 
+            showError('Please login first. Redirecting...'); 
+            setTimeout(() => window.location.href='../index.html', 2000); 
+            return; 
+        }
 
         if (!navigator.onLine) {
             notes = loadNotesOffline();
@@ -56,8 +83,20 @@ async function fetchNotes() {
             return;
         }
 
-        const res = await fetch(`${API_BASE_URL}/api/notes`, { headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}});
-        if (res.status === 401) { clearAuthToken(); showError('Session expired. Please login again.'); setTimeout(()=>window.location.href='../index.html',2000); return; }
+        const res = await fetch(`${API_BASE_URL}/api/notes`, { 
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (res.status === 401) { 
+            clearAuthToken(); 
+            showError('Session expired. Please login again.'); 
+            setTimeout(() => window.location.href='../index.html', 2000); 
+            return; 
+        }
+
         const data = await res.json();
         
         notes = (data.notes || []).map(n => ({
@@ -68,144 +107,174 @@ async function fetchNotes() {
         saveNotesOffline(notes);
         renderNotes();
 
-    } catch(err) { console.error(err); showError('Failed to load notes.'); }
+    } catch(err) { 
+        console.error('Fetch notes error:', err); 
+        showError('Failed to load notes.'); 
+    }
 }
 
-// ================= CRUD (تعديل جذري) =================
+// ================= CRUD (FIXED) =================
 async function saveNote(note) {
+    // Add to local array first
     notes.unshift(note); 
     saveNotesOffline(notes);
     renderNotes();
     
     if (!navigator.onLine) { 
-        addToOfflineQueue({type:'create',note}); 
+        addToOfflineQueue({ type: 'create', note }); 
         return note; 
     }
     
     try {
         const res = await fetch(`${API_BASE_URL}/api/notes`, { 
-            method:'POST', 
-            headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, 
-            body:JSON.stringify(note) 
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            }, 
+            body: JSON.stringify(note) 
         });
         
         if (res.ok) {
             const saved = await res.json();
             const index = notes.findIndex(n => n.id === note.id);
-            if (index !== -1) { notes[index] = saved.note; }
+            if (index !== -1) { 
+                notes[index] = saved.note; 
+            }
             saveNotesOffline(notes);
             renderNotes();
             return saved.note;
         } else {
             console.error("Server creation failed:", res.status);
-            addToOfflineQueue({type:'create',note});
+            addToOfflineQueue({ type: 'create', note });
             return note;
         }
     } catch(err) {
         console.error("Network error during creation:", err);
-        addToOfflineQueue({type:'create',note});
+        addToOfflineQueue({ type: 'create', note });
         return note;
     }
 }
 
 async function updateNote(note) {
     const index = notes.findIndex(n => n.id === note.id);
-    if (index !== -1) { notes[index] = note; }
+    if (index !== -1) { 
+        notes[index] = note; 
+    }
     saveNotesOffline(notes);
     
-    if (!navigator.onLine) { addToOfflineQueue({type:'update',note}); return; }
+    if (!navigator.onLine) { 
+        addToOfflineQueue({ type: 'update', note }); 
+        return; 
+    }
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/notes/${note.id}`, { 
-            method:'PUT', 
-            headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, 
-            body:JSON.stringify(note) 
+            method: 'PUT', 
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            }, 
+            body: JSON.stringify(note) 
         });
         
         if (res.status === 404 || !res.ok) {
             console.error(`Update failed: Note ${note.id} status ${res.status}. Adding to queue.`);
-            addToOfflineQueue({type:'update',note});
+            addToOfflineQueue({ type: 'update', note });
         }
     } catch(err) {
         console.error("Network error during update:", err);
-        addToOfflineQueue({type:'update',note});
+        addToOfflineQueue({ type: 'update', note });
     }
 }
 
+// ✅ FIXED: Remove updateNote() call
 async function deleteNote(noteId) {
-        notes = notes.filter(n=>n.id !== noteId);
-    saveNotesOffline(notes);
-    renderNotes();
-    updateNote();    
     if (!noteId) {
-        console.error("Attempted to delete a note without a valid ID. Skipping server request.");
+        console.error("Attempted to delete a note without a valid ID.");
         return;
     }
+
+    // Remove from local array
+    notes = notes.filter(n => n.id !== noteId);
+    saveNotesOffline(notes);
+    renderNotes();
+    
+    // ❌ REMOVED: updateNote() - this was causing notes to reappear
+    
     if (!navigator.onLine) { 
-        addToOfflineQueue({type:'delete',id:noteId});
+        addToOfflineQueue({ type: 'delete', id: noteId });
         return;
     }
     
     try {
         const res = await fetch(`${API_BASE_URL}/api/notes/${noteId}`, { 
-            method:'DELETE', 
-            headers:{'Authorization':`Bearer ${getAuthToken()}`} 
+            method: 'DELETE', 
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            } 
         });
         
         if (res.status === 404) {
             console.log(`Note ${noteId} not found on server, assuming already deleted.`);
         } else if (!res.ok) {
             console.error(`Delete failed with status: ${res.status}. Adding to queue.`);
-            addToOfflineQueue({type:'delete',id:noteId});
+            addToOfflineQueue({ type: 'delete', id: noteId });
         }
     } catch(err) {
         console.error("Network error during delete:", err);
-        addToOfflineQueue({type:'delete',id:noteId});
+        addToOfflineQueue({ type: 'delete', id: noteId });
     }
 }
 
-// ================= RENDER =================
+// ================= RENDER (FIXED) =================
 function filterNotes() { 
-    if(!searchTerm) return notes; 
-    return notes.filter(n=> n.content && n.content.toLowerCase().includes(searchTerm.toLowerCase())); 
+    if (!searchTerm) return notes; 
+    return notes.filter(n => n.content && n.content.toLowerCase().includes(searchTerm.toLowerCase())); 
 }
 
 function renderNotes() {
     const filtered = filterNotes();
-    notesContainer.innerHTML = filtered.length ? '' : '<div class="loading">No notes found.</div>';
+    notesContainer.innerHTML = filtered.length ? '' : '<div class="loading" style="text-align:center;padding:20px;">No notes found.</div>';
 
     filtered.forEach(note => {
         const card = document.createElement('div');
-        card.className='note'; card.dataset.id=note.id; card.draggable=true; 
-        card.style.backgroundColor=note.color||'#fff';
+        card.className = 'note';
+        card.dataset.id = note.id;
+        card.draggable = true;
+        card.style.backgroundColor = note.color || '#fff';
 
         // CONTROLS
-        const controls = document.createElement('div'); controls.className='note-controls';
+        const controls = document.createElement('div');
+        controls.className = 'note-controls';
 
         // Delete button
-        const del = document.createElement('button'); del.textContent='✖'; 
-        del.className="delete-btn";
-        del.className="button",
-        del.onclick = async()=>{ await deleteNote(note.id); }; 
+        const del = document.createElement('button');
+        del.textContent = '✖';
+        del.className = "delete-btn button";
+        del.onclick = async () => { 
+            if (confirm('Are you sure you want to delete this note?')) {
+                await deleteNote(note.id); 
+            }
+        };
         controls.appendChild(del);
 
         // Color picker
         const colorInput = document.createElement('input');
-        colorInput.type='color';
-        colorInput.className="color-btn"
-        colorInput.value=note.color||'#ffffff';
-        colorInput.oninput=()=>{ 
-            note.color=colorInput.value; 
-            card.style.backgroundColor=note.color; 
+        colorInput.type = 'color';
+        colorInput.className = "color-btn";
+        colorInput.value = note.color || '#ffffff';
+        colorInput.oninput = () => { 
+            note.color = colorInput.value; 
+            card.style.backgroundColor = note.color; 
             updateNote(note); 
         };
         controls.appendChild(colorInput);
 
         card.appendChild(controls);
         
-        // ================= CONTENT RENDERING (Task/Note) =================
-
-        if(note.type === 'task') {
+        // ================= CONTENT RENDERING (FIXED FOR TASKS) =================
+        if (note.type === 'task') {
             const label = document.createElement('label'); 
             label.className = 'task-label';
             
@@ -219,15 +288,24 @@ function renderNotes() {
             
             const taskText = document.createElement('span'); 
             taskText.contentEditable = true; 
-            taskText.innerText = note.content || 'New task'; 
+            taskText.textContent = note.content || 'New task'; // ✅ Use textContent
             
-            taskText.onblur = () => { 
-                const updatedContent = taskText.innerText.trim() || 'New task';
+            // ✅ FIXED: Better event handling for tasks
+            taskText.addEventListener('blur', () => { 
+                const updatedContent = taskText.textContent.trim() || 'New task';
                 if (note.content !== updatedContent) {
                     note.content = updatedContent;
                     updateNote(note);
                 }
-            };
+            });
+            
+            // Prevent Enter key from creating new line
+            taskText.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    taskText.blur();
+                }
+            });
             
             label.appendChild(checkbox);
             label.appendChild(taskText);
@@ -237,68 +315,188 @@ function renderNotes() {
             const content = document.createElement('div'); 
             content.className = 'note-content'; 
             content.contentEditable = true; 
-            content.innerText = note.content || 'New note';
+            content.textContent = note.content || 'New note'; // ✅ Use textContent
             
-            content.onblur = () => { 
-                const updatedContent = content.innerText.trim() || 'New note';
+            content.addEventListener('blur', () => { 
+                const updatedContent = content.textContent.trim() || 'New note';
                 if (note.content !== updatedContent) {
                     note.content = updatedContent;
                     updateNote(note);
                 }
-            };
+            });
             
             card.appendChild(content);
         }
 
-        // DRAG EVENTS
-        card.addEventListener('dragstart',e=>{ draggedElement=e.currentTarget; e.currentTarget.classList.add('dragging'); });
-        card.addEventListener('dragend',e=>{ e.currentTarget.classList.remove('dragging'); });
-        card.addEventListener('dragover',handleDragOver);
-        card.addEventListener('drop',handleDrop);
+        // ================= DRAG EVENTS (Desktop) =================
+        card.addEventListener('dragstart', e => { 
+            draggedElement = e.currentTarget; 
+            e.currentTarget.classList.add('dragging'); 
+        });
+        
+        card.addEventListener('dragend', e => { 
+            e.currentTarget.classList.remove('dragging'); 
+        });
+        
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+
+        // ================= TOUCH EVENTS (Mobile) =================
+        let touchStartY = 0;
+        let touchedElement = null;
+
+        card.addEventListener('touchstart', e => {
+            touchedElement = e.currentTarget;
+            touchStartY = e.touches[0].clientY;
+            touchedElement.classList.add('dragging');
+        });
+
+        card.addEventListener('touchmove', e => {
+            if (!touchedElement) return;
+            e.preventDefault();
+            
+            const touchY = e.touches[0].clientY;
+            const afterElement = getDragAfterElement(notesContainer, touchY);
+            
+            if (afterElement == null) {
+                notesContainer.appendChild(touchedElement);
+            } else {
+                notesContainer.insertBefore(touchedElement, afterElement);
+            }
+        });
+
+        card.addEventListener('touchend', e => {
+            if (!touchedElement) return;
+            touchedElement.classList.remove('dragging');
+            touchedElement = null;
+            
+            // Save new order
+            const newOrder = [];
+            notesContainer.querySelectorAll('.note').forEach(el => {
+                const note = notes.find(n => n.id === el.dataset.id);
+                if (note) newOrder.push(note);
+            });
+            notes = newOrder;
+            saveNotesOffline(notes);
+            
+            if (navigator.onLine) {
+                fetch(`${API_BASE_URL}/api/notes/reorder`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify({ order: notes.map(n => n.id) })
+                }).catch(err => console.error('Reorder error:', err));
+            }
+        });
 
         notesContainer.appendChild(card);
     });
 }
 
-// ================= DRAG & DROP =================
-function handleDragOver(e){ e.preventDefault(); const afterElement=getDragAfterElement(notesContainer,e.clientY); if(afterElement==null){ notesContainer.appendChild(draggedElement); } else{ notesContainer.insertBefore(draggedElement,afterElement); } }
-function handleDrop(e){
+// ================= DRAG & DROP (Desktop) =================
+function handleDragOver(e) {
     e.preventDefault();
-    const newOrder=[];
-    notesContainer.querySelectorAll('.note').forEach(el=>{ const note=notes.find(n=>n.id===el.dataset.id); if(note) newOrder.push(note); });
-    notes=newOrder;
-    saveNotesOffline(notes);
-    if(navigator.onLine){ fetch(`${API_BASE_URL}/api/notes/reorder`,{ method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${getAuthToken()}`}, body:JSON.stringify({order:notes.map(n=>n.id)})}); }
+    const afterElement = getDragAfterElement(notesContainer, e.clientY);
+    
+    if (afterElement == null) {
+        notesContainer.appendChild(draggedElement);
+    } else {
+        notesContainer.insertBefore(draggedElement, afterElement);
+    }
 }
-function getDragAfterElement(container,y){ const draggable=[...container.querySelectorAll('.note:not(.dragging)')]; return draggable.reduce((closest,child)=>{ const box=child.getBoundingClientRect(); const offset=y-(box.top+box.height/2); return (offset<0 && offset>closest.offset)?{offset:offset,element:child}:closest; },{offset:Number.NEGATIVE_INFINITY}).element; }
+
+function handleDrop(e) {
+    e.preventDefault();
+    
+    const newOrder = [];
+    notesContainer.querySelectorAll('.note').forEach(el => {
+        const note = notes.find(n => n.id === el.dataset.id);
+        if (note) newOrder.push(note);
+    });
+    
+    notes = newOrder;
+    saveNotesOffline(notes);
+    
+    if (navigator.onLine) {
+        fetch(`${API_BASE_URL}/api/notes/reorder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ order: notes.map(n => n.id) })
+        }).catch(err => console.error('Reorder error:', err));
+    }
+}
+
+function getDragAfterElement(container, y) {
+    const draggable = [...container.querySelectorAll('.note:not(.dragging)')];
+    
+    return draggable.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - (box.top + box.height / 2);
+        
+        return (offset < 0 && offset > closest.offset) 
+            ? { offset: offset, element: child } 
+            : closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
 
 // ================= EVENTS =================
-addNoteBtn.onclick = async()=>{
-    const note={id:uuid(),type:'note',content:'New note',color:'#fff',createdAt:new Date().toISOString()};
+addNoteBtn.onclick = async () => {
+    const note = {
+        id: uuid(),
+        type: 'note',
+        content: 'New note',
+        color: '#fff',
+        createdAt: new Date().toISOString()
+    };
     await saveNote(note);
 };
 
-addTaskBtn.onclick = async()=>{
-    const task={id:uuid(),type:'task',content:'New task',checked:false,color:'#fff',createdAt:new Date().toISOString()};
+addTaskBtn.onclick = async () => {
+    const task = {
+        id: uuid(),
+        type: 'task',
+        content: 'New task',
+        checked: false,
+        color: '#fff',
+        createdAt: new Date().toISOString()
+    };
     await saveNote(task);
 };
 
 // SEARCH
-searchInput.oninput=e=>{ searchTerm=e.target.value; renderNotes(); };
-searchBtn.onclick=()=>searchInput.focus();
+searchInput.oninput = e => { 
+    searchTerm = e.target.value; 
+    renderNotes(); 
+};
+
+searchBtn.onclick = () => searchInput.focus();
 
 // ================= SYNC OFFLINE =================
-window.addEventListener('online',async()=>{
-    const queue=JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)||'[]');
+window.addEventListener('online', async () => {
+    const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+    if (queue.length === 0) return;
+    
+    console.log('Syncing offline queue:', queue.length, 'actions');
     localStorage.removeItem(OFFLINE_QUEUE_KEY); 
     
-    for(const action of queue){
-        if(action.type==='create') {
-            notes = notes.filter(n => n.id !== action.note.id);
-            await saveNote(action.note);
+    for (const action of queue) {
+        try {
+            if (action.type === 'create') {
+                notes = notes.filter(n => n.id !== action.note.id);
+                await saveNote(action.note);
+            } else if (action.type === 'update') {
+                await updateNote(action.note);
+            } else if (action.type === 'delete') {
+                await deleteNote(action.id);
+            }
+        } catch (err) {
+            console.error('Sync error:', err);
         }
-        else if(action.type==='update') await updateNote(action.note);
-        else if(action.type==='delete') await deleteNote(action.id);
     }
     
     fetchNotes();

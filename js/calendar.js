@@ -13,7 +13,7 @@
 
         let currentDate = new Date();
         let selectedDate = null;
-        const token = localStorage.getItem('token') || 'demo-token';
+        const authToken = localStorage.getItem('authToken') || 'demo-token';
 
         const months = [
             'january', 'February', 'March', 'April', 'May', 'June',
@@ -181,14 +181,14 @@
             };
 
             console.log('Sending event data:', eventData);
-            console.log('Using token:', token);
+            console.log('Using token:', authToken);
 
             try {
                 const response = await fetch('https://edu-sync-back-end-production.up.railway.app/api/events', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify(eventData)
                 });
@@ -235,4 +235,4 @@
         initializeSelectors();
         renderCalendar();
 
-        console.log('Calendar initialized. Token:', token ? 'Present' : 'Missing');
+        console.log('Calendar initialized. Token:', authToken ? 'Present' : 'Missing');
