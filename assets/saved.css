@@ -119,7 +119,7 @@
 
 .btn-watch {
   background-color: var(--color-primary-dark);
-  color: #fff;
+  color: var(--color-text-light);
 }
 
 .btn-watch:hover {

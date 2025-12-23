@@ -134,7 +134,6 @@ async function loadRecommendedContent() {
     
     console.log("🎯 Field:", studyField);
 
-    // FIX: إضافة كلمات بحث عامة لو المجال مش موجود
     let keywords = STUDY_FIELD_KEYWORDS[studyField];
     if (!keywords) {
         keywords = [
@@ -151,14 +150,13 @@ async function loadRecommendedContent() {
     let totalVideos = 0;
     let sectionsCreated = 0;
 
-    // FIX: نحاول نجيب على الأقل 3 sections
     for (let i = 0; i < Math.min(keywords.length, 5); i++) {
         const keyword = keywords[i];
         console.log(`🔍 [${i+1}] Searching: "${keyword}"`);
         
         try {
             const videos = await searchYouTube(keyword, 6);
-            console.log(`✅ Found: ${videos.length} videos`);
+            console.log(` Found: ${videos.length} videos`);
             
             if (videos.length > 0) {
                 if (sectionsCreated === 0) {
@@ -171,29 +169,27 @@ async function loadRecommendedContent() {
                 totalVideos += videos.length;
                 sectionsCreated++;
                 
-                showMessage(`✅ Loaded ${videos.length} videos for "${keyword}"`, 'success');
             }
         } catch (error) {
             console.error(`❌ Error: ${keyword}`, error);
         }
         
-        // FIX: لو جبنا 3 sections يبقى كفاية
         if (sectionsCreated >= 3) break;
     }
 
-    console.log(`📊 Total: ${totalVideos} videos in ${sectionsCreated} sections`);
+    console.log(` Total: ${totalVideos} videos in ${sectionsCreated} sections`);
 
     if (sectionsCreated === 0) {
         container.innerHTML = `
             <div class="no-results">
-                <h2>❌ No Content Found</h2>
+                <h2> No Content Found</h2>
                 <p>Could not find educational videos for "${studyField}"</p>
-                <p>💡 Try using the search bar below or change your study field in settings</p>
+                <p> Try using the search bar below or change your study field in settings</p>
             </div>
         `;
-        showMessage(`❌ No content found for "${studyField}". Try searching manually!`, 'error');
+        showMessage(` No content found for "${studyField}". Try searching manually!`, 'error');
     } else {
-        showMessage(`🎉 Loaded ${totalVideos} videos successfully!`, 'success');
+        console.log(` Loaded ${totalVideos} videos successfully!`, 'success');
     }
 }
 
@@ -201,12 +197,12 @@ async function loadRecommendedContent() {
 async function searchYouTube(query, maxResults = 12) {
     try {
         const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}`;
-        console.log("📡 Fetching:", url);
+        console.log(" Fetching:", url);
 
         const response = await fetch(url);
         
         if (!response.ok) {
-            console.error("❌ HTTP Error:", response.status);
+            console.error(" HTTP Error:", response.status);
             return [];
         }
 
@@ -214,14 +210,14 @@ async function searchYouTube(query, maxResults = 12) {
         console.log("📥 Response:", data);
 
         if (data.error) {
-            console.error("❌ API Error:", data.error);
+            console.error(" API Error:", data.error);
             return [];
         }
 
         return data.items || [];
         
     } catch (error) {
-        console.error("💥 Error:", error);
+        console.error(" Error:", error);
         return [];
     }
 }
@@ -287,7 +283,7 @@ function createVideoCard(video) {
     if (watchBtn) {
         watchBtn.addEventListener("click", () => {
             if (videoId) {
-                openVideoModal(videoId); // FIX: يفتح في نفس الصفحة
+                openVideoModal(videoId); 
             } else {
                 alert("Video ID not available.");
             }
@@ -327,7 +323,7 @@ function saveVideo(videoId, title, thumbnail, channel) {
     let savedVideos = JSON.parse(localStorage.getItem("savedVideos") || "[]");
     
     if (savedVideos.find(v => v.videoId === videoId)) {
-        alert("Video already saved! ⭐");
+        alert("Video already saved! ");
         return;
     }
 
@@ -341,10 +337,10 @@ function saveVideo(videoId, title, thumbnail, channel) {
 
     try {
         localStorage.setItem("savedVideos", JSON.stringify(savedVideos));
-        alert("✅ Video saved successfully!");
+        alert(" Video saved successfully!");
     } catch (e) {
         console.error("Save error:", e);
-        alert("❌ Save failed.");
+        alert(" Save failed.");
     }
 }
 
@@ -365,7 +361,7 @@ function setupSearch() {
     async function performSearch() {
         const query = searchInput.value.trim();
         if (!query) {
-            alert("⚠️ Please enter search keywords");
+            alert(" Please enter search keywords");
             return;
         }
 
@@ -379,7 +375,6 @@ function setupSearch() {
         try {
             console.log(`🔍 Searching: "${query}"`);
             
-            // FIX: نضيف "tutorial" أو "course" للبحث عشان النتائج تكون أدق
             const enhancedQuery = query.includes("tutorial") || query.includes("course") 
                 ? query 
                 : `${query} tutorial`;
@@ -392,9 +387,9 @@ function setupSearch() {
                 if (searchVideos) {
                     searchVideos.innerHTML = `
                         <div class="no-results">
-                            <h3>❌ No Results Found</h3>
+                            <h3> No Results Found</h3>
                             <p>Could not find videos for "${query}"</p>
-                            <p>💡 Try:</p>
+                            <p> Try:</p>
                             <ul style="text-align: left; padding-left: 40px;">
                                 <li>Different search words</li>
                                 <li>Add "tutorial" or "course"</li>
@@ -404,7 +399,7 @@ function setupSearch() {
                     `;
                 }
             } else {
-                console.log(`✅ Found ${videos.length} videos`);
+                console.log(` Found ${videos.length} videos`);
                 
                 const successMsg = document.createElement('div');
                 successMsg.style.cssText = `
@@ -413,7 +408,7 @@ function setupSearch() {
                     border-radius: 8px;
                     font-weight: 600;
                 `;
-                successMsg.textContent = `✅ Found ${videos.length} videos for "${query}"`;
+                successMsg.textContent = ` Found ${videos.length} videos for "${query}"`;
                 searchVideos.appendChild(successMsg);
                 
                 const grid = document.createElement('div');
@@ -427,7 +422,6 @@ function setupSearch() {
                 searchVideos.appendChild(grid);
             }
 
-            // FIX: نظهر نتائج البحث
             if (searchResults) {
                 searchResults.style.display = "block";
                 setTimeout(() => {
@@ -435,11 +429,11 @@ function setupSearch() {
                 }, 100);
             }
         } catch (error) {
-            console.error("❌ Search error:", error);
+            console.error(" Search error:", error);
             if (searchVideos) {
                 searchVideos.innerHTML = `
                     <div class="no-results">
-                        <h3>⚠️ Error occurred</h3>
+                        <h3> Error occurred</h3>
                         <p>${error.message}</p>
                     </div>
                 `;
@@ -480,4 +474,3 @@ if (logoutBtn) {
     });
 }
 
-console.log("✅ home.js loaded");
