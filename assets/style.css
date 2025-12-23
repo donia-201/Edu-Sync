@@ -29,6 +29,7 @@ body{
 
 /* nav‑bar */
 .navbar{
+  background-color: var(--color-bg-light);
 flex-grow: 1;
 justify-content: space-between !important;
 position: fixed !important;
