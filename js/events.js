@@ -1,10 +1,8 @@
 const eventsContainer = document.getElementById('eventsContainer');
 const syncStatus = document.getElementById('syncStatus');
 
-// ✅ unified token name
 const authToken = localStorage.getItem('authToken');
 
-// Update sync status UI
 function updateSyncStatus(status, message) {
     syncStatus.className = `sync-status ${status}`;
     const icons = {
@@ -15,13 +13,12 @@ function updateSyncStatus(status, message) {
     syncStatus.innerHTML = `<i class="fas ${icons[status]}"></i> ${message}`;
 }
 
-// Fetch events from backend
 async function fetchEvents() {
     try {
-        updateSyncStatus('syncing', 'جاري المزامنة...');
+        updateSyncStatus('syncing', 'Syncing...');
 
         if (!authToken) {
-            throw new Error('لا يوجد توكن. يرجى تسجيل الدخول أولاً');
+            throw new Error('Please login First !');
         }
 
         const response = await fetch(
@@ -36,9 +33,9 @@ async function fetchEvents() {
 
         if (!response.ok) {
             if (response.status === 401) {
-                throw new Error('غير مصرح. يرجى تسجيل الدخول مرة أخرى');
+                throw new Error('Please login First !');
             }
-            throw new Error(`خطأ في الخادم: ${response.status}`);
+            throw new Error(`Error in server: ${response.status}`);
         }
 
         const data = await response.json();
@@ -61,7 +58,7 @@ async function fetchEvents() {
             eventsContainer.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">📅</div>
-                    <h3>لا توجد أحداث</h3>
+                    <h3> No Event Exist</h3>
                     <p> start adding events from calendar page</p>
                 </div>
             `;
@@ -75,10 +72,10 @@ async function fetchEvents() {
         eventsContainer.innerHTML = `
             <div class="error-state">
                 <div class="error-state-icon">⚠️</div>
-                <h3>فشل الاتصال بالسيرفر</h3>
+                <h3> Error while connectint to server </h3>
                 <p>${err.message}</p>
                 <button class="refresh-btn" onclick="fetchEvents()">
-                    <i class="fas fa-redo"></i> إعادة المحاولة
+                    <i class="fas fa-redo"></i> try again
                 </button>
             </div>
         `;
@@ -86,7 +83,6 @@ async function fetchEvents() {
     }
 }
 
-// Sync new events to backend
 async function syncNewEventsToBackend(newEvents) {
     const syncedIds = [];
 
