@@ -1,3 +1,4 @@
+// ===== Calendar with Mobile Fix (7 Days) =====
 const calendarGrid = document.getElementById('calendarGrid');
 const weekdaysDiv = document.getElementById('weekdays');
 const modal = document.getElementById('eventModal');
@@ -8,23 +9,21 @@ const prevMonthBtn = document.getElementById('prevMonth');
 const nextMonthBtn = document.getElementById('nextMonth');
 const monthSelect = document.getElementById('monthSelect');
 const yearSelect = document.getElementById('yearSelect');
-const monthYearSelector = document.getElementById('monthYearSelector');
 const selectedDateDisplay = document.getElementById('selectedDateDisplay');
 
 let currentDate = new Date();
 let selectedDate = null;
 
-const authToken = localStorage.getItem('authToken');
+const authToken = localStorage.getItem('session_token') || localStorage.getItem('authToken');
+const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
 
 const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const weekdays = [
-    'Sun', 'Mon', 'Tue',
-    'Wednes', 'Thurs', 'Fri', 'Sat'
-];
+// ✅ FIX: All 7 days for mobile
+const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function isMobile() {
     return window.innerWidth <= 768;
@@ -47,16 +46,17 @@ function initializeSelectors() {
     }
 }
 
+// ✅ FIX: Always show 7 days
 function renderWeekdays() {
     weekdaysDiv.innerHTML = '';
-    const daysToShow = isMobile() ? 5 : 7;
-
-    for (let i = 0; i < daysToShow; i++) {
+    
+    weekdays.forEach(day => {
         const div = document.createElement('div');
         div.className = 'calendar-weekday';
-        div.textContent = weekdays[i];
+        // ✅ Shorter text for mobile
+        div.textContent = isMobile() ? day.substring(0, 3) : day;
         weekdaysDiv.appendChild(div);
-    }
+    });
 }
 
 function renderCalendar() {
@@ -72,6 +72,7 @@ function renderCalendar() {
     const daysInPrevMonth = new Date(year, month, 0).getDate();
     const today = new Date();
 
+    // Previous month days
     for (let i = firstDay - 1; i >= 0; i--) {
         const day = document.createElement('div');
         day.classList.add('calendar-day', 'other-month');
@@ -79,6 +80,7 @@ function renderCalendar() {
         calendarGrid.appendChild(day);
     }
 
+    // Current month days
     for (let i = 1; i <= daysInMonth; i++) {
         const day = document.createElement('div');
         day.classList.add('calendar-day');
@@ -98,6 +100,17 @@ function renderCalendar() {
 
         calendarGrid.appendChild(day);
     }
+
+    // Next month days to fill the grid
+    const totalDays = firstDay + daysInMonth;
+    const remainingDays = totalDays % 7 === 0 ? 0 : 7 - (totalDays % 7);
+    
+    for (let i = 1; i <= remainingDays; i++) {
+        const day = document.createElement('div');
+        day.classList.add('calendar-day', 'other-month');
+        day.textContent = i;
+        calendarGrid.appendChild(day);
+    }
 }
 
 function openModal(year, month, day, e) {
@@ -114,12 +127,10 @@ function openModal(year, month, day, e) {
     const startDateTime = new Date(year, month, day, 9, 0);
     const endDateTime = new Date(year, month, day, 10, 0);
 
-    document.getElementById('eventStart').value =
-        formatDateTimeLocal(startDateTime);
-
-    document.getElementById('eventEnd').value =
-        formatDateTimeLocal(endDateTime);
-
+    document.getElementById('eventTitle').value = '';
+    document.getElementById('eventStart').value = formatDateTimeLocal(startDateTime);
+    document.getElementById('eventEnd').value = formatDateTimeLocal(endDateTime);
+    document.getElementById('eventDesc').value = '';
     document.getElementById('eventReminder').value = '';
 
     modal.classList.add('active');
@@ -131,14 +142,7 @@ function formatDateTimeLocal(date) {
 
 closeModalBtn.addEventListener('click', () => {
     modal.classList.remove('active');
-    clearForm();
 });
-
-function clearForm() {
-    document.getElementById('eventTitle').value = '';
-    document.getElementById('eventDesc').value = '';
-    document.getElementById('eventReminder').value = '';
-}
 
 saveEventBtn.addEventListener('click', async () => {
     const title = document.getElementById('eventTitle').value.trim();
@@ -148,7 +152,7 @@ saveEventBtn.addEventListener('click', async () => {
     const reminder = document.getElementById('eventReminder').value;
 
     if (!title || !start || !end) {
-        alert('Please fill required fields');
+        alert('Please fill required fields (Title, Start, End)');
         return;
     }
 
@@ -158,35 +162,75 @@ saveEventBtn.addEventListener('click', async () => {
         end,
         type: 'focus',
         description: desc || '',
-        reminder: reminder || null  
+        reminder: reminder || null
     };
 
     try {
-        const response = await fetch(
-            'https://edu-sync-back-end-production.up.railway.app/api/events',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
-                },
-                body: JSON.stringify(eventData)
-            }
-        );
+        console.log('📅 Saving event:', eventData);
+        
+        const response = await fetch(`${API_BASE_URL}/api/events`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(eventData)
+        });
 
         const data = await response.json();
 
         if (response.ok && data.success) {
             modal.classList.remove('active');
-            clearForm();
-            alert('Event saved successfully');
+            alert('✅ Event saved successfully!');
+            
+            // ✅ Save notification for this event
+            saveEventNotification(eventData);
         } else {
-            alert(data.msg || 'Failed to save event');
+            alert('❌ ' + (data.msg || 'Failed to save event'));
         }
     } catch (err) {
-        alert('Server connection error');
+        console.error('❌ Error saving event:', err);
+        alert('❌ Server connection error');
     }
 });
+
+// ✅ Save event notification to localStorage
+function saveEventNotification(eventData) {
+    try {
+        const NOTIFICATIONS_KEY = "pomodoro_notifications";
+        let notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '[]');
+        
+        const notification = {
+            id: Date.now(),
+            source: 'calendar',
+            type: 'event',
+            message: {
+                ar: `تم إنشاء حدث جديد: ${eventData.title}`,
+                en: `New event created: ${eventData.title}`
+            },
+            eventData: eventData,
+            timestamp: new Date().toISOString(),
+            date: new Date().toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        };
+        
+        notifications.unshift(notification);
+        
+        if (notifications.length > 50) {
+            notifications = notifications.slice(0, 50);
+        }
+        
+        localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+        console.log('✅ Event notification saved');
+    } catch (e) {
+        console.error('Error saving event notification:', e);
+    }
+}
 
 prevMonthBtn.addEventListener('click', () => {
     currentDate = new Date(

@@ -258,4 +258,6 @@
   /* small responsive */
   @media (max-width:760px){ 
     body{flex-direction:column; align-items:center}
-   }
+  }
+
+  
