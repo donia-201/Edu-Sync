@@ -185,3 +185,68 @@ body {
                 font-size: 0.85rem;
             }
         }
+
+.notification-card.event-type {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    color: #2d3436;
+}
+
+.notification-card.event-type .notification-type-badge {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.notification-card.read {
+    opacity: 0.7;
+}
+
+.notification-card.unread {
+    border-left: 4px solid #ff6b6b;
+}
+
+.unread-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ff6b6b;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    z-index: 2;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.notification-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--color-heading);
+}
+
+.notification-message {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+    color: var(--color-text-main);
+}
+
+.notification-card button {
+    transition: all 0.3s ease;
+}
+
+.notification-card button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}

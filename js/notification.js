@@ -1,17 +1,95 @@
-// ===== Unified Notifications System =====
 const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
 const POMODORO_NOTIFICATIONS_KEY = "pomodoro_notifications";
+const LAST_NOTIFICATION_CHECK = "last_notification_check";
 
 const notificationsList = document.getElementById('notificationsList');
 const emptyState = document.getElementById('emptyState');
 const clearAllBtn = document.getElementById('clearAllBtn');
-const container = document.getElementById("notificationsContainer");
 
 let allNotifications = [];
 
-// ===== Fetch Backend Notifications (Calendar/Events) =====
+// ===== Request Notification Permission =====
+async function requestNotificationPermission() {
+    if (!("Notification" in window)) {
+        console.log("Browser doesn't support notifications");
+        return false;
+    }
+
+    if (Notification.permission === "granted") {
+        return true;
+    }
+
+    if (Notification.permission !== "denied") {
+        const permission = await Notification.requestPermission();
+        return permission === "granted";
+    }
+
+    return false;
+}
+
+// ===== Show Browser Notification =====
+function showBrowserNotification(title, body, icon = '🔔', tag = 'eduSync') {
+    if (Notification.permission === "granted") {
+        try {
+            const notification = new Notification(title, {
+                body: body,
+                icon: icon === '🎉' ? '../imgs/200w.webp' : icon === '☕' ? '../imgs/200w-1.webp' : '../imgs/education.png',
+                badge: '../imgs/education.png',
+                tag: tag,
+                requireInteraction: false,
+                silent: false,
+                vibrate: [200, 100, 200],
+                timestamp: Date.now()
+            });
+
+            // Play sound
+            playNotificationSound();
+
+            // Auto-close after 5 seconds
+            setTimeout(() => notification.close(), 5000);
+
+            // Click handler
+            notification.onclick = function(event) {
+                event.preventDefault();
+                window.focus();
+                notification.close();
+                // Open notifications page
+                if (!window.location.href.includes('notifications.html')) {
+                    window.location.href = '../pages/notifications.html';
+                }
+            };
+
+            return notification;
+        } catch (error) {
+            console.error('Error showing notification:', error);
+        }
+    }
+}
+
+// ===== Play Notification Sound =====
+function playNotificationSound() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        gainNode.gain.value = 0.3;
+        
+        oscillator.start();
+        setTimeout(() => oscillator.stop(), 200);
+    } catch(e) {
+        console.log('Audio not supported');
+    }
+}
+
+// ===== Fetch Backend Notifications =====
 async function fetchBackendNotifications() {
-    const token = localStorage.getItem('session_token');
+    const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
     if (!token) return [];
 
     try {
@@ -48,7 +126,7 @@ async function fetchBackendNotifications() {
     }
 }
 
-// ===== Fetch Pomodoro Notifications (LocalStorage) =====
+// ===== Fetch Pomodoro Notifications =====
 function fetchPomodoroNotifications() {
     try {
         const notifications = JSON.parse(localStorage.getItem(POMODORO_NOTIFICATIONS_KEY) || '[]');
@@ -61,18 +139,72 @@ function fetchPomodoroNotifications() {
     }
 }
 
+// ===== Check for New Notifications =====
+async function checkForNewNotifications() {
+    const lastCheck = localStorage.getItem(LAST_NOTIFICATION_CHECK);
+    const lastCheckTime = lastCheck ? new Date(lastCheck) : new Date(0);
+    const pomodoroNotifs = fetchPomodoroNotifications();
+    const newPomodoroNotifs = pomodoroNotifs.filter(n => 
+        new Date(n.timestamp) > lastCheckTime
+    );
+
+    // Show browser notifications for new Pomodoro notifications
+    newPomodoroNotifs.forEach(notif => {
+        if (notif.type === 'focus') {
+            showBrowserNotification(
+                '🎉 Focus Session Complete!',
+                notif.message.en,
+                '🎉',
+                `pomodoro-${notif.id}`
+            );
+        } else if (notif.type === 'break') {
+            showBrowserNotification(
+                '☕ Break Time!',
+                notif.message.en,
+                '☕',
+                `pomodoro-${notif.id}`
+            );
+        } else if (notif.type === 'event') {
+            showBrowserNotification(
+                '📅 Calendar Event',
+                notif.message.en,
+                '📅',
+                `calendar-${notif.id}`
+            );
+        }
+    });
+
+    // Check Backend notifications
+    const backendNotifs = await fetchBackendNotifications();
+    const newBackendNotifs = backendNotifs.filter(n => 
+        !n.is_read && new Date(n.timestamp) > lastCheckTime
+    );
+
+    // Show browser notifications for new backend notifications
+    newBackendNotifs.forEach(notif => {
+        showBrowserNotification(
+            notif.title,
+            notif.message,
+            '📅',
+            `backend-${notif.id}`
+        );
+    });
+
+    localStorage.setItem(LAST_NOTIFICATION_CHECK, new Date().toISOString());
+}
+
 // ===== Load All Notifications =====
 async function loadAllNotifications() {
     try {
-        // Fetch from both sources
         const backendNotifs = await fetchBackendNotifications();
         const pomodoroNotifs = fetchPomodoroNotifications();
 
-        // Merge and sort by timestamp
         allNotifications = [...backendNotifs, ...pomodoroNotifs];
         allNotifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
         renderNotifications();
+        
+        await checkForNewNotifications();
     } catch (e) {
         console.error('Error loading notifications:', e);
     }
@@ -94,11 +226,22 @@ function renderNotifications() {
     notificationsList.innerHTML = allNotifications.map(notif => {
         if (notif.source === 'pomodoro') {
             // Pomodoro notification card
+            const iconMap = {
+                focus: '🎉',
+                break: '☕',
+                event: '📅'
+            };
+            const typeMap = {
+                focus: '🎯 Focus Session',
+                break: '☕ Break Time',
+                event: '📅 Calendar Event'
+            };
+            
             return `
                 <div class="notification-card ${notif.type}-type" data-id="${notif.id}">
                     <div class="notification-header">
                         <div class="notification-icon">
-                            ${notif.type === 'focus' ? '🎉' : '☕'}
+                            ${iconMap[notif.type] || '🔔'}
                         </div>
                         <div class="notification-time">
                             <i class="far fa-clock"></i> ${notif.date}
@@ -108,13 +251,13 @@ function renderNotifications() {
                         <div class="notification-message-ar">${notif.message.ar}</div>
                         <div class="notification-message-en">${notif.message.en}</div>
                         <span class="notification-type-badge">
-                            ${notif.type === 'focus' ? '🎯 Focus Session' : '☕ Break Time'}
+                            ${typeMap[notif.type] || '🔔 Notification'}
                         </span>
                     </div>
                 </div>
             `;
         } else {
-            // Backend (Calendar/Events) notification card
+            // Backend notification card
             return `
                 <div class="notification-card event-type ${notif.is_read ? 'read' : 'unread'}" 
                     data-id="${notif.id}" 
@@ -166,7 +309,7 @@ function renderNotifications() {
 
 // ===== Mark Backend Notification as Read =====
 async function markAsRead(backendId) {
-    const token = localStorage.getItem('session_token');
+    const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
     if (!token) return;
 
     try {
@@ -184,14 +327,11 @@ async function markAsRead(backendId) {
 // ===== Clear All Notifications =====
 clearAllBtn.addEventListener('click', async () => {
     if (confirm('Are you sure you want to clear all notifications?')) {
-        // Clear localStorage
         localStorage.removeItem(POMODORO_NOTIFICATIONS_KEY);
         
-        // Optionally clear backend notifications
-        const token = localStorage.getItem('session_token');
+        const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
         if (token) {
             try {
-                // Mark all as read or delete - adjust based on your backend
                 const backendNotifs = allNotifications.filter(n => n.source === 'backend');
                 for (const notif of backendNotifs) {
                     await markAsRead(notif.backendId);
@@ -205,12 +345,51 @@ clearAllBtn.addEventListener('click', async () => {
     }
 });
 
-// ===== Initial Load =====
-loadAllNotifications();
+// ===== Initialize on Page Load =====
+async function initialize() {
+    const hasPermission = await requestNotificationPermission();
+    
+    if (!hasPermission) {
+        console.log('Notification permission not granted');
+        const permissionBanner = document.createElement('div');
+        permissionBanner.className = 'notification-card';
+        permissionBanner.style.background = 'linear-gradient(135deg, #ffd93d, #f6a400)';
+        permissionBanner.innerHTML = `
+            <div class="notification-content" style="text-align: center;">
+                <h4>🔔 Enable Notifications</h4>
+                <p>Enable browser notifications to receive alerts even when you're away!</p>
+                <button onclick="location.reload()" style="background: white; color: #f6a400; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; margin-top: 10px;">
+                    Enable Now
+                </button>
+            </div>
+        `;
+        if (notificationsList) {
+            notificationsList.insertBefore(permissionBanner, notificationsList.firstChild);
+        }
+    }
+    
+    await loadAllNotifications();
+}
 
 // ===== Auto-refresh every 10 seconds =====
-setInterval(() => {
+setInterval(async () => {
     if (!document.hidden) {
-        loadAllNotifications();
+        await loadAllNotifications();
     }
 }, 10000);
+
+document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden) {
+        await loadAllNotifications();
+    }
+});
+
+// ===== Initialize =====
+initialize();
+
+// ===== Export function for other pages to trigger notifications =====
+window.EduSyncNotifications = {
+    show: showBrowserNotification,
+    requestPermission: requestNotificationPermission,
+    check: checkForNewNotifications
+};

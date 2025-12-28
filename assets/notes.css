@@ -313,7 +313,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.751);
             z-index: 9999;
             justify-content: center;
             align-items: center;
@@ -324,13 +324,14 @@
         }
 
         .modal-content {
-            background: white;
+            background: rgb(250, 241, 241) !important;
             padding: 30px;
             border-radius: 15px;
             max-width: 400px;
             width: 90%;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             animation: modalSlideIn 0.3s ease;
+            border-radius: 6px;
         }
 
         @keyframes modalSlideIn {
