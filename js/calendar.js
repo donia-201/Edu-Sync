@@ -146,7 +146,7 @@ function validateEventTimes(startStr, endStr) {
     if (start < now) {
         return {
             valid: false,
-            message: '❌ Start time cannot be in the past!'
+            message: ' Start time cannot be in the past!'
         };
     }
 
@@ -154,7 +154,7 @@ function validateEventTimes(startStr, endStr) {
     if (end <= start) {
         return {
             valid: false,
-            message: '❌ End time must be after start time (at least 1 minute)!'
+            message: ' End time must be after start time (at least 1 minute)!'
         };
     }
 
@@ -168,11 +168,11 @@ function scheduleReminderNotification(eventData, remindAt) {
     const timeUntilReminder = reminderTime - now;
 
     if (timeUntilReminder <= 0) {
-        console.log('⚠️ Reminder time is in the past, skipping notification');
+        console.log(' Reminder time is in the past, skipping notification');
         return null;
     }
 
-    console.log(`⏰ Scheduling reminder in ${Math.floor(timeUntilReminder / 1000)} seconds`);
+    console.log(` Scheduling reminder in ${Math.floor(timeUntilReminder / 1000)} seconds`);
 
     const timeoutId = setTimeout(() => {
         // Show browser notification
@@ -184,7 +184,7 @@ function scheduleReminderNotification(eventData, remindAt) {
         // Remove from scheduled map
         scheduledReminders.delete(eventData.id);
         
-        console.log('✅ Reminder notification sent for:', eventData.title);
+        console.log(' Reminder notification sent for:', eventData.title);
     }, timeUntilReminder);
 
     return timeoutId;
@@ -192,7 +192,7 @@ function scheduleReminderNotification(eventData, remindAt) {
 
 function showReminderNotification(eventData) {
     if ('Notification' in window && Notification.permission === 'granted') {
-        const notification = new Notification('📅 Event Reminder', {
+        const notification = new Notification(' Event Reminder', {
             body: `Upcoming: ${eventData.title}\nStarts at: ${new Date(eventData.start).toLocaleString()}`,
             icon: '../imgs/education.png',
             badge: '../imgs/education.png',
@@ -267,7 +267,7 @@ function saveReminderNotification(eventData) {
         }
         
         localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
-        console.log('✅ Reminder notification saved to localStorage');
+        console.log(' Reminder notification saved to localStorage');
     } catch (e) {
         console.error('Error saving reminder notification:', e);
     }
@@ -282,7 +282,7 @@ saveEventBtn.addEventListener('click', async () => {
     const reminder = document.getElementById('eventReminder').value;
 
     if (!title || !start || !end) {
-        alert('❌ Please fill required fields (Title, Start, End)');
+        alert(' Please fill required fields (Title, Start, End)');
         return;
     }
 
@@ -302,7 +302,7 @@ saveEventBtn.addEventListener('click', async () => {
         
         // Check if reminder is in the past
         if (remindAt < new Date()) {
-            alert('⚠️ Reminder time is in the past. Event will be created without notification.');
+            alert(' Reminder time is in the past. Event will be created without notification.');
             remindAt = null;
         }
     }
@@ -317,7 +317,7 @@ saveEventBtn.addEventListener('click', async () => {
     };
 
     try {
-        console.log('📅 Saving event:', eventData);
+        console.log(' Saving event:', eventData);
         
         const response = await fetch(`${API_BASE_URL}/api/events`, {
             method: 'POST',
@@ -332,7 +332,7 @@ saveEventBtn.addEventListener('click', async () => {
 
         if (response.ok && data.success) {
             modal.classList.remove('active');
-            alert('✅ Event saved successfully!');
+            alert(' Event saved successfully!');
             
             // Schedule reminder notification if reminder time is valid
             if (remindAt && remindAt > new Date()) {
@@ -342,18 +342,18 @@ saveEventBtn.addEventListener('click', async () => {
                 const timeoutId = scheduleReminderNotification(eventData, remindAt);
                 if (timeoutId) {
                     scheduledReminders.set(eventId, timeoutId);
-                    console.log(`⏰ Reminder scheduled for event ${eventId}`);
+                    console.log(` Reminder scheduled for event ${eventId}`);
                 }
             }
             
             // Reload calendar to show new event
             renderCalendar();
         } else {
-            alert('❌ ' + (data.msg || 'Failed to save event'));
+            alert(' ' + (data.msg || 'Failed to save event'));
         }
     } catch (err) {
-        console.error('❌ Error saving event:', err);
-        alert('❌ Server connection error. Please try again.');
+        console.error(' Error saving event:', err);
+        alert(' Server connection error. Please try again.');
     }
 });
 
@@ -386,10 +386,10 @@ async function loadEventsAndScheduleReminders() {
                 }
             });
             
-            console.log(`✅ Loaded ${events.length} events, scheduled ${scheduledReminders.size} reminders`);
+            console.log(` Loaded ${events.length} events, scheduled ${scheduledReminders.size} reminders`);
         }
     } catch (err) {
-        console.error('❌ Error loading events:', err);
+        console.error(' Error loading events:', err);
     }
 }
 
@@ -411,9 +411,9 @@ async function requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-            console.log('✅ Notification permission granted');
+            console.log(' Notification permission granted');
         } else {
-            console.log('⚠️ Notification permission denied');
+            console.log(' Notification permission denied');
         }
     }
 }

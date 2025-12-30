@@ -1,25 +1,36 @@
-  function handleSubmit(event) {
-            event.preventDefault();
-            
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const subject = document.getElementById('subject').value;
-            const message = document.getElementById('message').value;
+function handleSubmit(event) {
+    event.preventDefault();
 
-            // In a real application, this would send the data to a server
-            console.log('Form submitted:', { name, email, subject, message });
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const subject = document.getElementById("subject").value;
+    const message = document.getElementById("message").value;
 
-            // Show success message
-            const successMsg = document.getElementById('successMessage');
-            successMsg.style.display = 'block';
-            
+    fetch("https://edu-sync-back-end-production.up.railway.app/api/send-email", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name, email, subject, message })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById("successMessage").style.display = "block";
             setTimeout(() => {
-                successMsg.style.display = 'none';
+                document.getElementById("successMessage").style.display = "none";
             }, 4000);
-
-            // Reset form
-            event.target.reset();
+            document.querySelector("form").reset();
+        } else {
+            alert("Failed to send message");
         }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Server error");
+    });
+}
+
 
         function toggleFAQ(element) {
             // Close all other FAQs
