@@ -13,6 +13,7 @@ const selectedDateDisplay = document.getElementById('selectedDateDisplay');
 let currentDate = new Date();
 let selectedDate = null;
 let scheduledReminders = new Map(); // Store scheduled reminders
+let allEvents = []; // Store all loaded events
 
 const authToken = localStorage.getItem('session_token') || localStorage.getItem('authToken');
 const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
@@ -120,16 +121,21 @@ function openModal(year, month, day, e) {
     const endDateTime = new Date(year, month, day, 10, 0);
 
     document.getElementById('eventTitle').value = '';
-    document.getElementById('eventStart').value = formatDateTimeLocal(startDateTime);
-    document.getElementById('eventEnd').value = formatDateTimeLocal(endDateTime);
+    document.getElementById('eventStart').value = formatDateTimeLocalInput(startDateTime);
+    document.getElementById('eventEnd').value = formatDateTimeLocalInput(endDateTime);
     document.getElementById('eventDesc').value = '';
     document.getElementById('eventReminder').value = '';
 
     modal.classList.add('active');
 }
 
-function formatDateTimeLocal(date) {
+function formatDateTimeLocalInput(date) {
+    // Format for datetime-local input (YYYY-MM-DDTHH:MM)
     return date.toISOString().slice(0, 16);
+}
+
+function formatISO(dateStr) {
+    return new Date(dateStr).toISOString(); // Full ISO for backend
 }
 
 closeModalBtn.addEventListener('click', () => {
@@ -142,20 +148,12 @@ function validateEventTimes(startStr, endStr) {
     const start = new Date(startStr);
     const end = new Date(endStr);
 
-    // Check if start time is in the past
     if (start < now) {
-        return {
-            valid: false,
-            message: ' Start time cannot be in the past!'
-        };
+        return { valid: false, message: ' Start time cannot be in the past!' };
     }
 
-    // Check if end time is before or equal to start time
     if (end <= start) {
-        return {
-            valid: false,
-            message: ' End time must be after start time (at least 1 minute)!'
-        };
+        return { valid: false, message: ' End time must be after start time (at least 1 minute)!' };
     }
 
     return { valid: true };
@@ -175,15 +173,9 @@ function scheduleReminderNotification(eventData, remindAt) {
     console.log(` Scheduling reminder in ${Math.floor(timeUntilReminder / 1000)} seconds`);
 
     const timeoutId = setTimeout(() => {
-        // Show browser notification
         showReminderNotification(eventData);
-        
-        // Save notification to localStorage
         saveReminderNotification(eventData);
-        
-        // Remove from scheduled map
         scheduledReminders.delete(eventData.id);
-        
         console.log(' Reminder notification sent for:', eventData.title);
     }, timeUntilReminder);
 
@@ -206,7 +198,6 @@ function showReminderNotification(eventData) {
             notification.close();
         };
 
-        // Play notification sound
         playNotificationSound();
     }
 }
@@ -216,14 +207,11 @@ function playNotificationSound() {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
-        
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
         oscillator.frequency.value = 600;
         oscillator.type = 'sine';
         gainNode.gain.value = 0.3;
-        
         oscillator.start();
         setTimeout(() => oscillator.stop(), 300);
     } catch(e) {
@@ -252,20 +240,12 @@ function saveReminderNotification(eventData) {
             },
             timestamp: new Date().toISOString(),
             date: new Date().toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+                year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
             })
         };
         
         notifications.unshift(notification);
-        
-        if (notifications.length > 100) {
-            notifications = notifications.slice(0, 100);
-        }
-        
+        if (notifications.length > 100) notifications = notifications.slice(0, 100);
         localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
         console.log(' Reminder notification saved to localStorage');
     } catch (e) {
@@ -286,21 +266,21 @@ saveEventBtn.addEventListener('click', async () => {
         return;
     }
 
-    // Validate times
     const validation = validateEventTimes(start, end);
     if (!validation.valid) {
         alert(validation.message);
         return;
     }
 
-    // Calculate reminder time if set
+    if (reminder && isNaN(reminder)) {
+        alert(' Reminder must be a number of minutes');
+        return;
+    }
+
     let remindAt = null;
     if (reminder) {
         const startTime = new Date(start);
-        const reminderMinutes = parseInt(reminder);
-        remindAt = new Date(startTime.getTime() - reminderMinutes * 60000);
-        
-        // Check if reminder is in the past
+        remindAt = new Date(startTime.getTime() - parseInt(reminder) * 60000);
         if (remindAt < new Date()) {
             alert(' Reminder time is in the past. Event will be created without notification.');
             remindAt = null;
@@ -309,16 +289,15 @@ saveEventBtn.addEventListener('click', async () => {
 
     const eventData = {
         title,
-        start,
-        end,
+        start: formatISO(start),
+        end: formatISO(end),
         description: desc || '',
-        reminder: reminder || null,
+        reminder: reminder ? { minutesBefore: parseInt(reminder) } : null,
         remindAt: remindAt ? remindAt.toISOString() : null
     };
 
     try {
         console.log(' Saving event:', eventData);
-        
         const response = await fetch(`${API_BASE_URL}/api/events`, {
             method: 'POST',
             headers: {
@@ -334,19 +313,16 @@ saveEventBtn.addEventListener('click', async () => {
             modal.classList.remove('active');
             alert(' Event saved successfully!');
             
-            // Schedule reminder notification if reminder time is valid
-            if (remindAt && remindAt > new Date()) {
+            // Schedule reminder notification
+            if (remindAt) {
                 const eventId = data.event?.id || Date.now();
                 eventData.id = eventId;
-                
                 const timeoutId = scheduleReminderNotification(eventData, remindAt);
-                if (timeoutId) {
-                    scheduledReminders.set(eventId, timeoutId);
-                    console.log(` Reminder scheduled for event ${eventId}`);
-                }
+                if (timeoutId) scheduledReminders.set(eventId, timeoutId);
             }
-            
-            // Reload calendar to show new event
+
+            // Reload events from server
+            await loadEventsAndScheduleReminders();
             renderCalendar();
         } else {
             alert(' ' + (data.msg || 'Failed to save event'));
@@ -357,36 +333,31 @@ saveEventBtn.addEventListener('click', async () => {
     }
 });
 
-// ===== LOAD EXISTING EVENTS AND SCHEDULE REMINDERS =====
+// ===== LOAD EVENTS AND SCHEDULE REMINDERS =====
 async function loadEventsAndScheduleReminders() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/events`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
+            headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (response.ok) {
             const data = await response.json();
-            const events = data.events || [];
+            allEvents = data.events || [];
             
             const now = new Date();
-            
-            events.forEach(event => {
+            scheduledReminders.forEach(timeoutId => clearTimeout(timeoutId));
+            scheduledReminders.clear();
+
+            allEvents.forEach(event => {
                 if (event.remindAt) {
                     const remindAt = new Date(event.remindAt);
-                    
-                    // Only schedule if reminder is in the future
                     if (remindAt > now) {
                         const timeoutId = scheduleReminderNotification(event, event.remindAt);
-                        if (timeoutId) {
-                            scheduledReminders.set(event.id, timeoutId);
-                        }
+                        if (timeoutId) scheduledReminders.set(event.id, timeoutId);
                     }
                 }
             });
-            
-            console.log(` Loaded ${events.length} events, scheduled ${scheduledReminders.size} reminders`);
+            console.log(` Loaded ${allEvents.length} events, scheduled ${scheduledReminders.size} reminders`);
         }
     } catch (err) {
         console.error(' Error loading events:', err);
@@ -408,13 +379,13 @@ window.addEventListener('resize', renderCalendar);
 
 // ===== REQUEST NOTIFICATION PERMISSION =====
 async function requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
+    if (!('Notification' in window)) {
+        console.log('This browser does not support notifications.');
+        return;
+    }
+    if (Notification.permission === 'default') {
         const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            console.log(' Notification permission granted');
-        } else {
-            console.log(' Notification permission denied');
-        }
+        console.log(' Notification permission:', permission);
     }
 }
 
@@ -431,7 +402,7 @@ initialize();
 // ===== CHECK REMINDERS PERIODICALLY =====
 setInterval(() => {
     loadEventsAndScheduleReminders();
-}, 60000); // Check every minute
+}, 60000);
 
 // ===== CLEANUP ON PAGE UNLOAD =====
 window.addEventListener('beforeunload', () => {

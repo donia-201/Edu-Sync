@@ -6,11 +6,10 @@ function handleSubmit(event) {
     const subject = document.getElementById("subject").value;
     const message = document.getElementById("message").value;
 
-    fetch("https://edu-sync-back-end-production.up.railway.app/api/send-email", {
+ const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
+    fetch(`${API_BASE_URL}/api/send-email`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, subject, message })
     })
     .then(res => res.json())
@@ -22,14 +21,15 @@ function handleSubmit(event) {
             }, 4000);
             document.querySelector("form").reset();
         } else {
-            alert("Failed to send message");
+            alert("Failed to send message: " + data.msg);
         }
     })
     .catch(err => {
         console.error(err);
-        alert("Server error");
+        alert("Server error. Please try again.");
     });
 }
+
 
 
         function toggleFAQ(element) {
