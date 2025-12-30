@@ -12,8 +12,8 @@ const selectedDateDisplay = document.getElementById('selectedDateDisplay');
 
 let currentDate = new Date();
 let selectedDate = null;
-let scheduledReminders = new Map(); // Store scheduled reminders
-let allEvents = []; // Store all loaded events
+let scheduledReminders = new Map();
+let allEvents = [];
 
 const authToken = localStorage.getItem('session_token') || localStorage.getItem('authToken');
 const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
@@ -48,7 +48,6 @@ function initializeSelectors() {
 
 function renderWeekdays() {
     weekdaysDiv.innerHTML = '';
-    
     weekdays.forEach(day => {
         const div = document.createElement('div');
         div.className = 'calendar-weekday';
@@ -130,53 +129,66 @@ function openModal(year, month, day, e) {
 }
 
 function formatDateTimeLocalInput(date) {
-    // Format for datetime-local input (YYYY-MM-DDTHH:MM)
-    return date.toISOString().slice(0, 16);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-function formatISO(dateStr) {
-    return new Date(dateStr).toISOString(); // Full ISO for backend
+function formatToISO(dateTimeLocalString) {
+    const date = new Date(dateTimeLocalString);
+    
+    if (isNaN(date.getTime())) {
+        console.error('❌ Invalid date:', dateTimeLocalString);
+        return null;
+    }
+    
+    return date.toISOString();
 }
 
 closeModalBtn.addEventListener('click', () => {
     modal.classList.remove('active');
 });
 
-// ===== VALIDATION FUNCTIONS =====
 function validateEventTimes(startStr, endStr) {
     const now = new Date();
     const start = new Date(startStr);
     const end = new Date(endStr);
 
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return { valid: false, message: '⚠️ Invalid date format!' };
+    }
+
     if (start < now) {
-        return { valid: false, message: ' Start time cannot be in the past!' };
+        return { valid: false, message: '⚠️ Start time cannot be in the past!' };
     }
 
     if (end <= start) {
-        return { valid: false, message: ' End time must be after start time (at least 1 minute)!' };
+        return { valid: false, message: '⚠️ End time must be after start time!' };
     }
 
     return { valid: true };
 }
 
-// ===== SCHEDULE REMINDER NOTIFICATION =====
 function scheduleReminderNotification(eventData, remindAt) {
     const reminderTime = new Date(remindAt);
     const now = new Date();
     const timeUntilReminder = reminderTime - now;
 
     if (timeUntilReminder <= 0) {
-        console.log(' Reminder time is in the past, skipping notification');
+        console.log('⏰ Reminder time is in the past, skipping notification');
         return null;
     }
 
-    console.log(` Scheduling reminder in ${Math.floor(timeUntilReminder / 1000)} seconds`);
+    console.log(`⏰ Scheduling reminder in ${Math.floor(timeUntilReminder / 1000)} seconds`);
 
     const timeoutId = setTimeout(() => {
         showReminderNotification(eventData);
         saveReminderNotification(eventData);
         scheduledReminders.delete(eventData.id);
-        console.log(' Reminder notification sent for:', eventData.title);
+        console.log('✅ Reminder notification sent for:', eventData.title);
     }, timeUntilReminder);
 
     return timeoutId;
@@ -184,7 +196,7 @@ function scheduleReminderNotification(eventData, remindAt) {
 
 function showReminderNotification(eventData) {
     if ('Notification' in window && Notification.permission === 'granted') {
-        const notification = new Notification(' Event Reminder', {
+        const notification = new Notification('🔔 Event Reminder', {
             body: `Upcoming: ${eventData.title}\nStarts at: ${new Date(eventData.start).toLocaleString()}`,
             icon: '../imgs/education.png',
             badge: '../imgs/education.png',
@@ -247,58 +259,83 @@ function saveReminderNotification(eventData) {
         notifications.unshift(notification);
         if (notifications.length > 100) notifications = notifications.slice(0, 100);
         localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
-        console.log(' Reminder notification saved to localStorage');
+        console.log('✅ Reminder notification saved to localStorage');
     } catch (e) {
-        console.error('Error saving reminder notification:', e);
+        console.error('❌ Error saving reminder notification:', e);
     }
 }
 
-// ===== SAVE EVENT =====
+// ✅✅✅ SAVE EVENT - FIXED VERSION ✅✅✅
 saveEventBtn.addEventListener('click', async () => {
     const title = document.getElementById('eventTitle').value.trim();
-    const start = document.getElementById('eventStart').value;
-    const end = document.getElementById('eventEnd').value;
+    const startInput = document.getElementById('eventStart').value;
+    const endInput = document.getElementById('eventEnd').value;
     const desc = document.getElementById('eventDesc').value.trim();
     const reminder = document.getElementById('eventReminder').value;
 
-    if (!title || !start || !end) {
-        alert(' Please fill required fields (Title, Start, End)');
+    console.log('📝 Form values:', { title, startInput, endInput, desc, reminder });
+
+    // Basic validation
+    if (!title || !startInput || !endInput) {
+        alert('⚠️ Please fill required fields (Title, Start, End)');
         return;
     }
 
+    // Convert to ISO format
+    const start = formatToISO(startInput);
+    const end = formatToISO(endInput);
+
+    if (!start || !end) {
+        alert('⚠️ Invalid date/time format');
+        return;
+    }
+
+    console.log('📅 Converted dates:', { start, end });
+
+    // Validate times
     const validation = validateEventTimes(start, end);
     if (!validation.valid) {
         alert(validation.message);
         return;
     }
 
-    if (reminder && isNaN(reminder)) {
-        alert(' Reminder must be a number of minutes');
+    // Validate reminder
+    if (reminder && (isNaN(reminder) || parseInt(reminder) < 0)) {
+        alert('⚠️ Reminder must be a positive number of minutes');
         return;
     }
 
+    // Calculate reminder time
     let remindAt = null;
-    if (reminder) {
+    if (reminder && parseInt(reminder) > 0) {
         const startTime = new Date(start);
         remindAt = new Date(startTime.getTime() - parseInt(reminder) * 60000);
         if (remindAt < new Date()) {
-            alert(' Reminder time is in the past. Event will be created without notification.');
+            const shouldContinue = confirm('⚠️ Reminder time is in the past. Continue without reminder?');
+            if (!shouldContinue) return;
             remindAt = null;
         }
     }
 
+    // ✅ Prepare event data with EXACT format backend expects
     const eventData = {
-        title,
-        start: formatISO(start),
-        end: formatISO(end),
+        title: title,
+        start: start,
+        end: end,
         description: desc || '',
         reminder: reminder ? { minutesBefore: parseInt(reminder) } : null,
         remindAt: remindAt ? remindAt.toISOString() : null
     };
 
+    console.log('📤 Sending event data:', JSON.stringify(eventData, null, 2));
+
+    // Disable button
+    saveEventBtn.disabled = true;
+    const originalText = saveEventBtn.textContent;
+    saveEventBtn.textContent = 'Saving...';
+
     try {
-        console.log(' Saving event:', eventData);
-        const response = await fetch(`${API_BASE_URL}/api/events`, {
+        const response = await fetch(`${API_BASE_URL}/api/calendar/events`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -307,13 +344,16 @@ saveEventBtn.addEventListener('click', async () => {
             body: JSON.stringify(eventData)
         });
 
+        console.log('📡 Response status:', response.status);
+        
         const data = await response.json();
+        console.log('📥 Server response:', data);
 
         if (response.ok && data.success) {
             modal.classList.remove('active');
-            alert(' Event saved successfully!');
+            alert('✅ Event saved successfully!');
             
-            // Schedule reminder notification
+            // Schedule reminder
             if (remindAt) {
                 const eventId = data.event?.id || Date.now();
                 eventData.id = eventId;
@@ -321,28 +361,35 @@ saveEventBtn.addEventListener('click', async () => {
                 if (timeoutId) scheduledReminders.set(eventId, timeoutId);
             }
 
-            // Reload events from server
+            // Reload events
             await loadEventsAndScheduleReminders();
             renderCalendar();
         } else {
-            alert(' ' + (data.msg || 'Failed to save event'));
+            console.error('❌ Server error:', data);
+            alert('❌ Failed to save event: ' + (data.msg || 'Unknown error'));
         }
     } catch (err) {
-        console.error(' Error saving event:', err);
-        alert(' Server connection error. Please try again.');
+        console.error('❌ Network error:', err);
+        alert('❌ Server connection error. Please check:\n1. Your internet connection\n2. Backend is running\n3. Auth token is valid');
+    } finally {
+        saveEventBtn.disabled = false;
+        saveEventBtn.textContent = originalText;
     }
 });
 
-// ===== LOAD EVENTS AND SCHEDULE REMINDERS =====
 async function loadEventsAndScheduleReminders() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/events`, {
+        console.log('📡 Loading events...');
+        
+        const response = await fetch(`${API_BASE_URL}/api/calendar/events`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (response.ok) {
             const data = await response.json();
             allEvents = data.events || [];
+            
+            console.log(`✅ Loaded ${allEvents.length} events`);
             
             const now = new Date();
             scheduledReminders.forEach(timeoutId => clearTimeout(timeoutId));
@@ -357,14 +404,16 @@ async function loadEventsAndScheduleReminders() {
                     }
                 }
             });
-            console.log(` Loaded ${allEvents.length} events, scheduled ${scheduledReminders.size} reminders`);
+            
+            console.log(`⏰ Scheduled ${scheduledReminders.size} reminders`);
+        } else {
+            console.error('❌ Failed to load events:', response.status);
         }
     } catch (err) {
-        console.error(' Error loading events:', err);
+        console.error('❌ Error loading events:', err);
     }
 }
 
-// ===== NAVIGATION =====
 prevMonthBtn.addEventListener('click', () => {
     currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
     renderCalendar();
@@ -377,34 +426,41 @@ nextMonthBtn.addEventListener('click', () => {
 
 window.addEventListener('resize', renderCalendar);
 
-// ===== REQUEST NOTIFICATION PERMISSION =====
 async function requestNotificationPermission() {
     if (!('Notification' in window)) {
-        console.log('This browser does not support notifications.');
+        console.log('⚠️ This browser does not support notifications.');
         return;
     }
     if (Notification.permission === 'default') {
         const permission = await Notification.requestPermission();
-        console.log(' Notification permission:', permission);
+        console.log('🔔 Notification permission:', permission);
     }
 }
 
-// ===== INITIALIZE =====
 async function initialize() {
+    console.log('🚀 Initializing calendar...');
+    console.log('🔑 Auth token:', authToken ? 'Present' : 'Missing');
+    
+    if (!authToken) {
+        alert('⚠️ You need to login first!');
+        window.location.href = '../index.html';
+        return;
+    }
+    
     initializeSelectors();
     renderCalendar();
     await requestNotificationPermission();
     await loadEventsAndScheduleReminders();
+    
+    console.log('✅ Calendar initialized');
 }
 
 initialize();
 
-// ===== CHECK REMINDERS PERIODICALLY =====
 setInterval(() => {
     loadEventsAndScheduleReminders();
 }, 60000);
 
-// ===== CLEANUP ON PAGE UNLOAD =====
 window.addEventListener('beforeunload', () => {
     scheduledReminders.forEach(timeoutId => clearTimeout(timeoutId));
     scheduledReminders.clear();
