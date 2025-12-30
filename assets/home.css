@@ -161,11 +161,11 @@ visibility: visible !important;
         }
         .btn-watch {
             background: var(--color-primary-dark);
-            color: var(--color-text-light);
+            color: var(--color-text-main);
         }
         .btn-save {
             background: var(--color-primary-dark);
-            color: var(--color-text-light);
+            color: var(--color-text-main);
         }
         .btn-watch:hover { background: var(--color-accent-dark); }
         .btn-save:hover { background: var(--color-accent-dark); }

@@ -393,3 +393,30 @@ window.EduSyncNotifications = {
     requestPermission: requestNotificationPermission,
     check: checkForNewNotifications
 };
+
+// دالة لطلب إذن الإشعارات
+function requestNotificationPermission() {
+    const settings = loadUserSettings();
+    
+    if (settings && settings.desktopNotifications && Notification.permission !== 'granted') {
+        Notification.requestPermission();
+    }
+}
+
+// إرسال إشعار
+function sendNotification(title, message) {
+    const settings = loadUserSettings();
+    
+    if (settings && settings.desktopNotifications && Notification.permission === 'granted') {
+        new Notification(title, {
+            body: message,
+            icon: '../imgs/brainstorm-ezgif.com-gif-to-webp-converter.webp' 
+        });
+    }
+}
+
+// مثال: إشعار عند انتهاء البومودورو
+function onPomodoroComplete() {
+    sendNotification('Pomodoro Completed!', 'Great work! Time for a break.');
+}
+
