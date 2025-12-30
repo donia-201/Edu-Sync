@@ -70,7 +70,7 @@ async function fetchEvents() {
 
     } catch (err) {
         eventsContainer.innerHTML = `
-            <div class="error-state">
+            <div class="error-state d-block">
                 <div class="error-state-icon">⚠️</div>
                 <h3> Error while connectint to server </h3>
                 <p>${err.message}</p>
@@ -162,7 +162,7 @@ function renderEvents(events) {
         card.innerHTML = `
             <div class="card-header">
                 <div class="card-time">
-                     ${startFormatted} - ${endFormatted}
+                    ${startFormatted} - ${endFormatted}
                 </div>
                 <div class="card-actions">
                     <button class="edit-btn" data-id="${ev.id}">✏️</button>
@@ -171,8 +171,6 @@ function renderEvents(events) {
             </div>
             <div class="card-body">
                 <div class="event-title">${ev.title}</div>
-                <span class="event-type">
-                    ${ev.type === 'focus' ? 'focus' : 'breake'}
                 </span>
                 ${ev.description
                     ? `<div class="event-description">${ev.description}</div>`

@@ -97,8 +97,13 @@ visibility: visible !important;
 
         .playlist-section {
             margin: 3rem 0;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
         }
         .playlist-title {
+            display: flex;
+            justify-content: center;
             font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 1.5rem;

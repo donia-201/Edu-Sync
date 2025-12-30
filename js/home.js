@@ -373,7 +373,6 @@ function setupSearch() {
         }
 
         try {
-            console.log(`🔍 Searching: "${query}"`);
             
             const enhancedQuery = query.includes("tutorial") || query.includes("course") 
                 ? query 
