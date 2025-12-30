@@ -139,13 +139,14 @@ function formatDateTimeLocalInput(date) {
 
 function formatToISO(dateTimeLocalString) {
     const date = new Date(dateTimeLocalString);
-    
+
     if (isNaN(date.getTime())) {
-        console.error('❌ Invalid date:', dateTimeLocalString);
+        console.error(' Invalid date:', dateTimeLocalString);
         return null;
     }
-    
-    return date.toISOString();
+
+    const isoString = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString();
+    return isoString;
 }
 
 closeModalBtn.addEventListener('click', () => {
