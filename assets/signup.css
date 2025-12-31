@@ -103,3 +103,9 @@ label , .heading{
 #OtherField{
   display: none;
 }
+
+.error{
+  color: rgb(240, 82, 82);
+  font-size: 0.9rem;
+  margin-top: 4px;
+}

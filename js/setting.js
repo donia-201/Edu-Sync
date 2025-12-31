@@ -1,349 +1,381 @@
-
 const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
+const authToken = localStorage.getItem('session_token') || localStorage.getItem('authToken');
 
-// ===== Save Settings to Backend and LocalStorage =====
-async function saveSettings() {
-    const settings = {
-        // Account
-        displayName: document.getElementById('displayName').value,
-        email: document.getElementById('email').value,
-        studyField: document.getElementById('studyField').value,
-        academicLevel: document.getElementById('academicLevel').value,
-        
-        // Appearance
-        theme: document.getElementById('theme').value,
-        language: document.getElementById('language').value,
-        fontSize: document.getElementById('fontSize').value,
-        animations: document.getElementById('animations').checked,
-        
-        // Study Preferences
-        pomodoroDuration: document.getElementById('pomodoroDuration').value,
-        breakDuration: document.getElementById('breakDuration').value,
-        longBreakDuration: document.getElementById('longBreakDuration').value,
-        studyGoal: document.getElementById('studyGoal').value,
-        autoStart: document.getElementById('autoStart').checked,
-        
-        // Notifications
-        studyReminders: document.getElementById('studyReminders').checked,
-        breakNotifications: document.getElementById('breakNotifications').checked,
-        examReminders: document.getElementById('examReminders').checked,
-        weeklyReport: document.getElementById('weeklyReport').checked,
-        soundEffects: document.getElementById('soundEffects').checked,
-        desktopNotifications: document.getElementById('desktopNotifications').checked,
-        
-        // Calendar Integration
-        googleCalendar: document.getElementById('googleCalendar').checked,
-        autoAddSessions: document.getElementById('autoAddSessions').checked,
-        syncExams: document.getElementById('syncExams').checked,
-        
-        // Privacy
-        analytics: document.getElementById('analytics').checked
-    };
-
+// ===================================
+// Load User Profile & Settings on Page Load
+// ===================================
+async function loadUserProfile() {
     try {
-        // Save to localStorage first (fallback)
-        localStorage.setItem('eduSyncSettings', JSON.stringify(settings));
-        console.log(' Settings saved to localStorage');
+        console.log('📥 Loading user profile...');
         
-        // Save to backend
-        const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
+        if (!authToken) {
+            alert('Please login first!');
+            window.location.href = '../index.html';
+            return;
+        }
         
-        if (token) {
-            const response = await fetch(`${API_BASE_URL}/api/settings`, {
-                method: 'POST',
+        const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load profile');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const user = data.user;
+            const settings = user.settings;
+            
+            console.log('✅ Profile loaded:', user);
+            
+            // ===================================
+            // Account Settings
+            // ===================================
+            document.getElementById('displayName').value = user.name || '';
+            document.getElementById('email').value = user.email || '';
+            
+            // ===================================
+            // Appearance Settings
+            // ===================================
+            // Theme (map to your theme names)
+            const themeMap = {
+                'light': 'blue',
+                'dark': 'purple',
+                'auto': 'blue'
+            };
+            document.getElementById('theme').value = themeMap[settings.theme] || 'blue';
+            
+            // Language
+            document.getElementById('language').value = settings.language || 'en';
+            
+            // Font Size (map to your font size names)
+            const fontSizeMap = {
+                'small': 'small',
+                'medium': 'medium',
+                'large': 'large',
+                'xlarge': 'extra-large'
+            };
+            document.getElementById('fontSize').value = fontSizeMap[settings.font_size] || 'medium';
+            
+            // ===================================
+            // Study Preferences
+            // ===================================
+            document.getElementById('pomodoroDuration').value = settings.pomodoro_duration || 25;
+            document.getElementById('breakDuration').value = settings.short_break || 5;
+            document.getElementById('longBreakDuration').value = settings.long_break || 15;
+            
+            // ===================================
+            // Notifications
+            // ===================================
+            document.getElementById('soundEffects').checked = settings.sound_enabled !== false;
+            document.getElementById('desktopNotifications').checked = settings.notifications_enabled !== false;
+            
+            // Apply settings to current page
+            applySettingsToPage(settings);
+            
+            console.log('✅ Settings loaded and applied');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading profile:', error);
+        showSuccessMessage('⚠️ Failed to load settings', true);
+    }
+}
+
+
+// ===================================
+// Save Settings to Backend
+// ===================================
+async function saveSettings() {
+    try {
+        console.log('💾 Saving settings...');
+        
+        if (!authToken) {
+            alert('Please login first!');
+            return;
+        }
+        
+        // ===================================
+        // Collect Account Settings
+        // ===================================
+        const displayName = document.getElementById('displayName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        
+        // ===================================
+        // Collect Appearance Settings
+        // ===================================
+        const theme = document.getElementById('theme').value;
+        const language = document.getElementById('language').value;
+        const fontSize = document.getElementById('fontSize').value;
+        
+        // ===================================
+        // Collect Study Preferences
+        // ===================================
+        const pomodoroDuration = parseInt(document.getElementById('pomodoroDuration').value);
+        const breakDuration = parseInt(document.getElementById('breakDuration').value);
+        const longBreakDuration = parseInt(document.getElementById('longBreakDuration').value);
+        
+        // ===================================
+        // Collect Notification Settings
+        // ===================================
+        const soundEffects = document.getElementById('soundEffects').checked;
+        const desktopNotifications = document.getElementById('desktopNotifications').checked;
+        
+        // ===================================
+        // Map theme to backend format
+        // ===================================
+        const themeBackendMap = {
+            'blue': 'light',
+            'purple': 'dark',
+            'green': 'light',
+            'pink': 'light',
+            'sunset': 'light',
+            'ocean': 'dark'
+        };
+        
+        const backendTheme = themeBackendMap[theme] || 'light';
+        
+        // ===================================
+        // Map font size to backend format
+        // ===================================
+        const fontSizeBackendMap = {
+            'small': 'small',
+            'medium': 'medium',
+            'large': 'large',
+            'extra-large': 'xlarge'
+        };
+        
+        const backendFontSize = fontSizeBackendMap[fontSize] || 'medium';
+        
+        // ===================================
+        // Prepare settings data
+        // ===================================
+        const settingsData = {
+            theme: backendTheme,
+            language: language,
+            font_size: backendFontSize,
+            pomodoro_duration: pomodoroDuration,
+            short_break: breakDuration,
+            long_break: longBreakDuration,
+            sound_enabled: soundEffects,
+            notifications_enabled: desktopNotifications
+        };
+        
+        console.log('📤 Settings to save:', settingsData);
+        
+        // ===================================
+        // Save Settings to Backend
+        // ===================================
+        const settingsResponse = await fetch(`${API_BASE_URL}/api/user/settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(settingsData)
+        });
+        
+        const settingsResult = await settingsResponse.json();
+        
+        if (!settingsResult.success) {
+            throw new Error(settingsResult.msg || 'Failed to save settings');
+        }
+        
+        // ===================================
+        // Update Profile (Name) if changed
+        // ===================================
+        if (displayName) {
+            const profileResponse = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify(settings)
+                body: JSON.stringify({ name: displayName })
             });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                console.log(' Settings saved to backend');
-            } else {
-                console.warn(' Backend save failed, using localStorage only');
-            }
+            
+            const profileResult = await profileResponse.json();
+            console.log('📝 Profile update:', profileResult);
         }
         
+        console.log('✅ Settings saved successfully');
+        
+        // ===================================
+        // Save to localStorage for instant sync
+        // ===================================
+        localStorage.setItem('userSettings', JSON.stringify(settingsData));
+        
+        // ===================================
         // Apply settings immediately
-        applyTheme(settings.theme);
-        applyFontSize(settings.fontSize);
-        applyLanguage(settings.language);
-        applyAnimations(settings.animations);
+        // ===================================
+        applySettingsToPage(settingsData);
         
+        // ===================================
+        // Notify other tabs
+        // ===================================
+        window.dispatchEvent(new CustomEvent('settingsChanged', { detail: settingsData }));
+        
+        // ===================================
         // Show success message
-        showSuccessMessage();
-        
-        // Request notification permission if enabled
-        if (settings.desktopNotifications) {
-            requestNotificationPermission();
-        }
+        // ===================================
+        showSuccessMessage('✓ Settings saved successfully!');
         
     } catch (error) {
-        console.error(' Error saving settings:', error);
-        alert(' Settings saved locally but could not sync with server');
+        console.error('❌ Error saving settings:', error);
+        showSuccessMessage('⚠️ Failed to save settings: ' + error.message, true);
     }
 }
 
-// ===== Load Settings from Backend and LocalStorage =====
-async function loadSettings() {
-    try {
-        const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
-        let settings = null;
 
-        // Try to load from backend first
-        if (token) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/settings`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success && data.settings) {
-                    settings = data.settings;
-                    // Save to localStorage as backup
-                    localStorage.setItem('eduSyncSettings', JSON.stringify(settings));
-                    console.log(' Settings loaded from backend');
-                }
-            } catch (e) {
-                console.warn(' Could not load from backend, using localStorage');
-            }
-        }
-
-        // Fallback to localStorage
-        if (!settings) {
-            const savedSettings = localStorage.getItem('eduSyncSettings');
-            if (savedSettings) {
-                settings = JSON.parse(savedSettings);
-                console.log(' Settings loaded from localStorage');
-            }
-        }
-
-        // Apply settings to form
-        if (settings) {
-            // Account
-            if (settings.displayName) document.getElementById('displayName').value = settings.displayName;
-            if (settings.email) document.getElementById('email').value = settings.email;
-            if (settings.studyField) document.getElementById('studyField').value = settings.studyField;
-            if (settings.academicLevel) document.getElementById('academicLevel').value = settings.academicLevel;
-            
-            // Appearance
-            if (settings.theme) document.getElementById('theme').value = settings.theme;
-            if (settings.language) document.getElementById('language').value = settings.language;
-            if (settings.fontSize) document.getElementById('fontSize').value = settings.fontSize;
-            document.getElementById('animations').checked = settings.animations !== false;
-            
-            // Study Preferences
-            if (settings.pomodoroDuration) document.getElementById('pomodoroDuration').value = settings.pomodoroDuration;
-            if (settings.breakDuration) document.getElementById('breakDuration').value = settings.breakDuration;
-            if (settings.longBreakDuration) document.getElementById('longBreakDuration').value = settings.longBreakDuration;
-            if (settings.studyGoal) document.getElementById('studyGoal').value = settings.studyGoal;
-            document.getElementById('autoStart').checked = settings.autoStart || false;
-            
-            // Notifications
-            document.getElementById('studyReminders').checked = settings.studyReminders !== false;
-            document.getElementById('breakNotifications').checked = settings.breakNotifications !== false;
-            document.getElementById('examReminders').checked = settings.examReminders !== false;
-            document.getElementById('weeklyReport').checked = settings.weeklyReport !== false;
-            document.getElementById('soundEffects').checked = settings.soundEffects !== false;
-            document.getElementById('desktopNotifications').checked = settings.desktopNotifications || false;
-            
-            // Calendar Integration
-            document.getElementById('googleCalendar').checked = settings.googleCalendar || false;
-            document.getElementById('autoAddSessions').checked = settings.autoAddSessions || false;
-            document.getElementById('syncExams').checked = settings.syncExams || false;
-            
-            // Privacy
-            document.getElementById('analytics').checked = settings.analytics !== false;
-            
-            console.log('✅ Settings applied to form');
-        }
-        
-    } catch (error) {
-        console.error(' Error loading settings:', error);
-    }
-}
-
-// ===== Reset All Settings =====
-async function resetSettings() {
-    if (!confirm('Are you sure you want to reset all settings to default? This cannot be undone.')) {
-        return;
-    }
-
-    try {
-        // Remove from localStorage
-        localStorage.removeItem('eduSyncSettings');
-        
-        // Reset on backend
-        const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
-        
-        if (token) {
-            await fetch(`${API_BASE_URL}/api/settings/reset`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-        }
-        
-        // Reload page to show defaults
-        window.location.reload();
-        
-    } catch (error) {
-        console.error(' Error resetting settings:', error);
-        localStorage.removeItem('eduSyncSettings');
-        window.location.reload();
-    }
-}
-
-// ===== Export Data =====
-async function exportData() {
-    try {
-        const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
-        
-        if (!token) {
-            alert(' Please login to export your data');
-            return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/export`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `edusync-data-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            alert(' Data exported successfully!');
-        } else {
-            alert(' Failed to export data');
-        }
-        
-    } catch (error) {
-        console.error(' Error exporting data:', error);
-        alert(' Error exporting data');
-    }
-}
-
-// ===== Delete Account =====
-async function deleteAccount() {
-    const confirmation = prompt(' WARNING: This will permanently delete your account and all data.\n\nType "DELETE" to confirm:');
+// ===================================
+// Apply Settings to Current Page
+// ===================================
+function applySettingsToPage(settings) {
+    // Apply theme (color scheme)
+    applyTheme(settings.theme);
     
-    if (confirmation !== 'DELETE') {
-        alert(' Account deletion cancelled');
-        return;
-    }
+    // Apply language
+    applyLanguage(settings.language);
+    
+    // Apply font size
+    applyFontSize(settings.font_size);
+    
+    console.log('✅ Settings applied to page');
+}
 
-    try {
-        const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
-        
-        if (!token) {
-            alert('❌ Please login to delete your account');
-            return;
-        }
 
-        const response = await fetch(`${API_BASE_URL}/api/account/delete`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (response.ok) {
-            // Clear all local data
-            localStorage.clear();
-            sessionStorage.clear();
-            
-            alert(' Account deleted successfully. You will now be redirected to the home page.');
-            window.location.href = '../index.html';
-        } else {
-            alert(' Failed to delete account');
-        }
-        
-    } catch (error) {
-        console.error(' Error deleting account:', error);
-        alert(' Error deleting account');
+function applyTheme(theme) {
+    const html = document.documentElement;
+    const body = document.body;
+    
+    if (theme === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+        body.classList.add('dark-mode');
+        body.classList.remove('light-mode');
+    } else {
+        html.setAttribute('data-theme', 'light');
+        body.classList.add('light-mode');
+        body.classList.remove('dark-mode');
     }
 }
 
-// ===== Show Success Message =====
-function showSuccessMessage() {
-    const message = document.getElementById('successMessage');
-    if (message) {
-        message.style.display = 'block';
+
+function applyLanguage(language) {
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+}
+
+
+function applyFontSize(fontSize) {
+    const html = document.documentElement;
+    
+    const fontSizeMap = {
+        'small': '14px',
+        'medium': '16px',
+        'large': '18px',
+        'xlarge': '20px'
+    };
+    
+    html.style.fontSize = fontSizeMap[fontSize] || '16px';
+}
+
+
+// ===================================
+// Show Success Message
+// ===================================
+function showSuccessMessage(message, isError = false) {
+    const successMessage = document.getElementById('successMessage');
+    
+    if (successMessage) {
+        successMessage.textContent = message;
+        successMessage.style.background = isError ? '#ef4444' : '#10b981';
+        successMessage.style.display = 'block';
+        
         setTimeout(() => {
-            message.style.display = 'none';
+            successMessage.style.display = 'none';
         }, 3000);
+    } else {
+        alert(message);
     }
 }
 
-// ===== Apply Theme Changes (Preview) =====
-document.getElementById('theme')?.addEventListener('change', (e) => {
-    applyTheme(e.target.value);
-});
 
-document.getElementById('fontSize')?.addEventListener('change', (e) => {
-    applyFontSize(e.target.value);
-});
-
-document.getElementById('language')?.addEventListener('change', (e) => {
-    applyLanguage(e.target.value);
-});
-
-document.getElementById('animations')?.addEventListener('change', (e) => {
-    applyAnimations(e.target.checked);
-});
-
-// ===== Event Listeners for Action Buttons =====
-document.addEventListener('DOMContentLoaded', () => {
-    // Load settings on page load
-    loadSettings();
-    
-    // Export data button
-    const exportBtn = document.querySelector('.action-btn[onclick*="Export"]');
-    if (exportBtn) {
-        exportBtn.onclick = (e) => {
-            e.preventDefault();
-            exportData();
-        };
+// ===================================
+// Reset Settings to Default
+// ===================================
+async function resetSettings() {
+    if (!confirm('⚠️ Are you sure you want to reset all settings to default?')) {
+        return;
     }
     
-    // Delete account button
-    const deleteBtn = document.querySelector('.action-btn.danger');
-    if (deleteBtn) {
-        deleteBtn.onclick = (e) => {
-            e.preventDefault();
-            deleteAccount();
+    try {
+        const defaultSettings = {
+            theme: 'light',
+            language: 'en',
+            font_size: 'medium',
+            pomodoro_duration: 25,
+            short_break: 5,
+            long_break: 15,
+            sound_enabled: true,
+            notifications_enabled: true
         };
-    }
-});
-
-// ===== Auto-save on change (optional) =====
-function enableAutoSave() {
-    const inputs = document.querySelectorAll('input, select');
-    inputs.forEach(input => {
-        input.addEventListener('change', () => {
-            console.log('💾 Auto-saving settings...');
-            saveSettings();
+        
+        const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(defaultSettings)
         });
-    });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            localStorage.setItem('userSettings', JSON.stringify(defaultSettings));
+            showSuccessMessage('✓ Settings reset to default');
+            
+            // Reload page to show default values
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            throw new Error(data.msg);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error resetting settings:', error);
+        showSuccessMessage('⚠️ Failed to reset settings', true);
+    }
 }
 
-// Uncomment to enable auto-save:
-// enableAutoSave();
 
-console.log(' setting.js loaded successfully');
+// ===================================
+// Initialize on Page Load
+// ===================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Initializing settings page...');
+    
+    // Load user profile and settings
+    loadUserProfile();
+    
+    // Setup save button
+    const saveBtn = document.querySelector('.save-btn');
+    if (saveBtn) {
+        // Remove onclick from HTML if exists
+        saveBtn.onclick = null;
+        saveBtn.addEventListener('click', saveSettings);
+    }
+    
+    // Setup reset button
+    const resetBtn = document.querySelector('.action-btn:not(.danger)');
+    if (resetBtn && resetBtn.textContent.includes('Reset')) {
+        resetBtn.onclick = resetSettings;
+    }
+    
+    console.log(' Settings page initialized');
+});

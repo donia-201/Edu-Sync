@@ -255,8 +255,8 @@ function createVideoCard(video) {
 
     const snippet = video.snippet || {};
     const thumbnail = snippet.thumbnails?.high?.url || 
-                     snippet.thumbnails?.medium?.url || 
-                     snippet.thumbnails?.default?.url || "";
+                    snippet.thumbnails?.medium?.url || 
+                    snippet.thumbnails?.default?.url || "";
     const title = safeText(snippet.title);
     const channel = safeText(snippet.channelTitle);
 
@@ -308,7 +308,7 @@ function openVideoModal(videoId) {
     // Show modal
     modal.classList.add('active');
     
-    console.log("▶️ Playing video:", videoId);
+    console.log(" Playing video:", videoId);
 }
 
 // ==================== Save Video ====================
