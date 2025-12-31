@@ -1,49 +1,40 @@
 function handleSubmit(event) {
     event.preventDefault();
-    
+
     const name = document.getElementById("name").value;
     const email = document.getElementById("email").value;
     const subject = document.getElementById("subject").value;
     const message = document.getElementById("message").value;
-    
-    const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
-    
-    // Show loading state
+
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Sending...';
+
+    submitBtn.textContent = "Sending...";
     submitBtn.disabled = true;
-    
-    fetch(`${API_BASE_URL}/api/send-email`, {  // ✅ Fixed: added parentheses
-        method: "POST",
-        headers: { 
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name, email, subject, message })
-    })
-    .then(res => {
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
+
+    emailjs.send(
+        "YOUR_SERVICE_ID",     // <-- حطي Service ID
+        "YOUR_TEMPLATE_ID",    // <-- حطي Template ID
+        {
+            name: name,
+            email: email,
+            subject: subject,
+            message: message
         }
-        return res.json();
+    )
+    .then(() => {
+        document.getElementById("successMessage").style.display = "block";
+        setTimeout(() => {
+            document.getElementById("successMessage").style.display = "none";
+        }, 4000);
+
+        document.querySelector("form").reset();
     })
-    .then(data => {
-        if (data.success) {
-            document.getElementById("successMessage").style.display = "block";
-            setTimeout(() => {
-                document.getElementById("successMessage").style.display = "none";
-            }, 4000);
-            document.querySelector("form").reset();
-        } else {
-            alert("Failed to send message: " + data.msg);
-        }
-    })
-    .catch(err => {
-        console.error("Error details:", err);
-        alert("Server error. Please try again later.\nError: " + err.message);
+    .catch(error => {
+        console.error("EmailJS Error:", error);
+        alert("حصل خطأ أثناء الإرسال ");
     })
     .finally(() => {
-        // Restore button state
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
     });
