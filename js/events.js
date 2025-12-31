@@ -65,7 +65,7 @@ async function fetchEvents() {
             updateSyncStatus('synced', 'no events found');
         } else {
             renderEvents(events);
-            updateSyncStatus('synced', `تم تحميل ${events.length} حدث`);
+            updateSyncStatus('synced', `${events.length} events loaded`);
         }
 
     } catch (err) {
@@ -165,8 +165,8 @@ function renderEvents(events) {
                     ${startFormatted} - ${endFormatted}
                 </div>
                 <div class="card-actions">
-                    <button class="edit-btn" data-id="${ev.id}">✏️</button>
-                    <button class="delete-btn" data-id="${ev.id}">🗑️</button>
+                    <button class="edit-btn btn-action" data-id="${ev.id}">✏️</button>
+                    <button class="delete-btn btn-action" data-id="${ev.id}">🗑️</button>
                 </div>
             </div>
             <div class="card-body">

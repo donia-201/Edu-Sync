@@ -74,6 +74,7 @@
         }
 
         .page-header {
+            flex-direction: column;
             text-align: center;
             margin-bottom: 30px;
         }
@@ -92,6 +93,7 @@
             display: inline-block;
             margin-top: 10px;
             box-shadow: 0 4px 15px var(--color-shadow);
+            max-width: 300px;
         }
 
         .events-stats {

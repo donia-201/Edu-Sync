@@ -13,8 +13,8 @@ function handleSubmit(event) {
     submitBtn.disabled = true;
 
     emailjs.send(
-        "YOUR_SERVICE_ID",     // <-- حطي Service ID
-        "YOUR_TEMPLATE_ID",    // <-- حطي Template ID
+        "xapc wxsy fpuu rjzt",    
+        "template_kgqf7ue",    
         {
             name: name,
             email: email,

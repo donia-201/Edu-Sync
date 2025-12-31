@@ -69,9 +69,7 @@ function showMessage(message, type = 'info') {
 }
 
 // ==================== Page Load ====================
-window.addEventListener("DOMContentLoaded", async () => {
-    console.log("🚀 Page loaded");
-    
+window.addEventListener("DOMContentLoaded", async () => {    
     const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -82,7 +80,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     currentUser = user;
-    console.log("👤 User:", currentUser);
+    console.log(" User:", currentUser);
 
     const welcomeMsg = document.getElementById("welcome-message");
     const studyFieldMsg = document.getElementById("study-field-message");
@@ -132,7 +130,7 @@ async function loadRecommendedContent() {
     const rawStudy = (currentUser?.study_field) || "computer science";
     const studyField = String(rawStudy).toLowerCase().trim();
     
-    console.log("🎯 Field:", studyField);
+    console.log(" Field:", studyField);
 
     let keywords = STUDY_FIELD_KEYWORDS[studyField];
     if (!keywords) {
@@ -143,7 +141,7 @@ async function loadRecommendedContent() {
         ];
     }
     
-    console.log("🔑 Keywords:", keywords);
+    console.log(" Keywords:", keywords);
     
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
 
@@ -152,7 +150,7 @@ async function loadRecommendedContent() {
 
     for (let i = 0; i < Math.min(keywords.length, 5); i++) {
         const keyword = keywords[i];
-        console.log(`🔍 [${i+1}] Searching: "${keyword}"`);
+        console.log(` [${i+1}] Searching: "${keyword}"`);
         
         try {
             const videos = await searchYouTube(keyword, 6);
@@ -171,7 +169,7 @@ async function loadRecommendedContent() {
                 
             }
         } catch (error) {
-            console.error(`❌ Error: ${keyword}`, error);
+            console.error(` Error: ${keyword}`, error);
         }
         
         if (sectionsCreated >= 3) break;
@@ -207,7 +205,7 @@ async function searchYouTube(query, maxResults = 12) {
         }
 
         const data = await response.json();
-        console.log("📥 Response:", data);
+        console.log(" Response:", data);
 
         if (data.error) {
             console.error(" API Error:", data.error);
