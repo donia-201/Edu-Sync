@@ -139,14 +139,13 @@ function formatDateTimeLocalInput(date) {
 
 function formatToISO(dateTimeLocalString) {
     const date = new Date(dateTimeLocalString);
-
+    
     if (isNaN(date.getTime())) {
-        console.error(' Invalid date:', dateTimeLocalString);
+        console.error('❌ Invalid date:', dateTimeLocalString);
         return null;
     }
-
-    const isoString = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString();
-    return isoString;
+    
+    return date.toISOString();
 }
 
 closeModalBtn.addEventListener('click', () => {
@@ -282,16 +281,19 @@ saveEventBtn.addEventListener('click', async () => {
         return;
     }
 
-    // Convert to ISO format
+    // ✅ Convert to ISO format - FIXED
     const start = formatToISO(startInput);
     const end = formatToISO(endInput);
 
     if (!start || !end) {
-        alert('⚠️ Invalid date/time format');
+        alert('⚠️ Invalid date/time format. Please check your inputs.');
+        console.error('❌ Date conversion failed:', { startInput, endInput });
         return;
     }
 
     console.log('📅 Converted dates:', { start, end });
+    console.log('🔍 Start input type:', typeof startInput, startInput);
+    console.log('🔍 End input type:', typeof endInput, endInput);
 
     // Validate times
     const validation = validateEventTimes(start, end);
@@ -336,7 +338,11 @@ saveEventBtn.addEventListener('click', async () => {
     saveEventBtn.textContent = 'Saving...';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/calendar/events`, {
+        // ✅ استخدمي الـ endpoint الصحيح
+        const apiUrl = `${API_BASE_URL}/api/calendar/events`;
+        console.log('📡 Sending to:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -382,6 +388,7 @@ async function loadEventsAndScheduleReminders() {
     try {
         console.log('📡 Loading events...');
         
+        // ✅ استخدمي الـ endpoint الصحيح
         const response = await fetch(`${API_BASE_URL}/api/calendar/events`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduSync</title>
+    <title>EduSync - Calendar</title>
     <link rel="stylesheet" href="../assets/bootstrap.min.css">
     <link rel="stylesheet" href="../assets/calendar.css">
     <link rel="stylesheet" href="../assets/style.css">
@@ -18,9 +18,9 @@
 <body>
 
     <nav class="navbar py-3">
-        <div class="container  py-3">
+        <div class="container py-3">
             <span class="navbar-brand title2 mb-0">EduSync</span>
-            <div class="navbar-nav ms-auto d-flex  flex-row align-items-center">
+            <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
                 <a class="nav-link px-2" href="../pages/dashboard.html"><i class="fa-solid fa-chart-line"></i></a>                
                 <a class="nav-link px-2" href="../pages/events.html"><i class="fa-regular fa-calendar"></i></a>
                 <a class="nav-link px-2" href="../pages/pomotimer.html"><i class="fa-solid fa-stopwatch-20"></i></a>
@@ -31,67 +31,104 @@
             </div>
         </div>
     </nav>
-<main >
-    <div class="calendar-container">
-        <div class="calendar-header">
-            <button id="prevMonth"><i class="fas fa-chevron-right"></i></button>
-            <div>
-                <h2 id="currentMonthYear" onclick="toggleMonthYearSelector()">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span id="monthYearText"></span>
-                </h2>
-                <div class="month-year-selector" id="monthYearSelector">
-                    <select id="monthSelect"></select>
-                    <select id="yearSelect"></select>
-                    <button onclick="applyMonthYear()">تطبيق</button>
+
+    <main>
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <button id="prevMonth"><i class="fas fa-chevron-right"></i></button>
+                <div>
+                    <h2 id="currentMonthYear" onclick="toggleMonthYearSelector()">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span id="monthYearText"></span>
+                    </h2>
+                    <div class="month-year-selector" id="monthYearSelector">
+                        <select id="monthSelect"></select>
+                        <select id="yearSelect"></select>
+                        <button onclick="applyMonthYear()">تطبيق</button>
+                    </div>
                 </div>
+                <button id="nextMonth"><i class="fas fa-chevron-left"></i></button>
             </div>
-            <button id="nextMonth"><i class="fas fa-chevron-left"></i></button>
+
+            <div class="calendar-weekdays" id="weekdays"></div>
+            <div class="calendar-grid" id="calendarGrid"></div>
         </div>
 
-        <div class="calendar-weekdays" id="weekdays"></div>
-        <div class="calendar-grid" id="calendarGrid"></div>
-    </div>
+        <!-- ✅ Modal محسّن -->
+        <div class="modal" id="eventModal">
+            <div class="modal-content">
+                <span class="close-btn" id="closeModal">&times;</span>
+                <h3>📅 Add New Event</h3>
+                <div class="selected-date-display" id="selectedDateDisplay"></div>
+                
+                <div class="form-group">
+                    <label for="eventTitle">📝 Event title *</label>
+                    <input 
+                        type="text" 
+                        id="eventTitle" 
+                        class="form-control"
+                        placeholder="Enter Event title..."
+                        required
+                    >
+                </div>
 
-    <div class="modal" id="eventModal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeModal">&times;</span>
-            <h3> Add New Event</h3>
-            <div class="selected-date-display" id="selectedDateDisplay"></div>
-            
-            <div class="form-group">
-                <label for="eventTitle"> Event title *</label>
-                <input type="text" id="eventTitle" placeholder=" Enter Event title...">
+                <div class="form-group">
+                    <label for="eventStart">⏰ Start Time *</label>
+                    <input 
+                        type="datetime-local" 
+                        id="eventStart"
+                        class="form-control"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="eventEnd">⏰ End Time *</label>
+                    <input 
+                        type="datetime-local" 
+                        id="eventEnd"
+                        class="form-control"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="eventDesc">📄 Description</label>
+                    <textarea 
+                        id="eventDesc" 
+                        class="form-control"
+                        placeholder="Enter Description... (optional)"
+                        rows="3"
+                    ></textarea>
+                </div>
+
+                <!-- ✅ FIXED: Reminder should be NUMBER (minutes) -->
+                <div class="form-group">
+                    <label for="eventReminder">🔔 Reminder (minutes before)</label>
+                    <select id="eventReminder" class="form-control">
+                        <option value="">No Reminder</option>
+                        <option value="5">5 minutes before</option>
+                        <option value="10">10 minutes before</option>
+                        <option value="15">15 minutes before</option>
+                        <option value="30">30 minutes before</option>
+                        <option value="60">1 hour before</option>
+                        <option value="120">2 hours before</option>
+                        <option value="1440">1 day before</option>
+                    </select>
+                    <small class="form-text text-muted">
+                        When should we remind you about this event?
+                    </small>
+                </div>
+
+                <button id="saveEventBtn" class="btn btn-primary w-100">
+                    <i class="fas fa-save"></i> Save Event
+                </button>
             </div>
-
-            <div class="form-group">
-                <label for="eventStart"> Start Time *</label>
-                <input type="datetime-local" id="eventStart">
-            </div>
-
-            <div class="form-group">
-                <label for="eventEnd"> End Time *</label>
-                <input type="datetime-local" id="eventEnd">
-            </div>
-
-            <div class="form-group">
-                <label for="eventDesc">Description</label>
-                <textarea id="eventDesc" placeholder=" Enter Description... (optional)"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="eventReminder">Reminder (optional)</label>
-                <input type="datetime-local" id="eventReminder">
-            </div>
-
-            <button id="saveEventBtn">
-                <i class="fas fa-save"></i> Save Event
-            </button>
         </div>
-    </div>
-</main>
+    </main>
+
     <script src="../js/shared.js"></script>
-<script src="../js/calendar.js"></script>
+    <script src="../js/calendar.js"></script>
     <script src="../js/bootstrap.bundle.min.js"></script>
     <script src="../js/theme.js"></script>
     <script src="../js/main.js"></script>
