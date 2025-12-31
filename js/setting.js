@@ -4,9 +4,9 @@ const authToken = localStorage.getItem('session_token') || localStorage.getItem(
 // ===================================
 // Load User Profile & Settings on Page Load
 // ===================================
-async function loadUserProfile() {
+async function loadUserSettings() {
     try {
-        console.log('📥 Loading user profile...');
+        console.log('📥 Loading user settings...');
         
         if (!authToken) {
             alert('Please login first!');
@@ -15,179 +15,95 @@ async function loadUserProfile() {
         }
         
         const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
+            headers: { 'Authorization': `Bearer ${authToken}` }
         });
         
-        if (!response.ok) {
-            throw new Error('Failed to load profile');
-        }
-        
+        if (!response.ok) throw new Error('Failed to load profile');
         const data = await response.json();
         
         if (data.success) {
             const user = data.user;
             const settings = user.settings;
+
+            window.userSettings = settings; // تخزين عالمي
             
-            console.log('✅ Profile loaded:', user);
-            
-            // ===================================
-            // Account Settings
-            // ===================================
+            console.log('✅ Profile & settings loaded:', user);
+
+            // Account
             document.getElementById('displayName').value = user.name || '';
             document.getElementById('email').value = user.email || '';
-            
-            // ===================================
-            // Appearance Settings
-            // ===================================
-            // Theme (map to your theme names)
-            const themeMap = {
-                'light': 'blue',
-                'dark': 'purple',
-                'auto': 'blue'
-            };
+
+            // Appearance
+            const themeMap = { 'light':'blue', 'dark':'purple', 'auto':'blue' };
             document.getElementById('theme').value = themeMap[settings.theme] || 'blue';
-            
-            // Language
             document.getElementById('language').value = settings.language || 'en';
-            
-            // Font Size (map to your font size names)
-            const fontSizeMap = {
-                'small': 'small',
-                'medium': 'medium',
-                'large': 'large',
-                'xlarge': 'extra-large'
-            };
+            const fontSizeMap = { 'small':'small','medium':'medium','large':'large','xlarge':'extra-large' };
             document.getElementById('fontSize').value = fontSizeMap[settings.font_size] || 'medium';
-            
-            // ===================================
-            // Study Preferences
-            // ===================================
+
+            // Study
             document.getElementById('pomodoroDuration').value = settings.pomodoro_duration || 25;
             document.getElementById('breakDuration').value = settings.short_break || 5;
             document.getElementById('longBreakDuration').value = settings.long_break || 15;
-            
-            // ===================================
+
             // Notifications
-            // ===================================
             document.getElementById('soundEffects').checked = settings.sound_enabled !== false;
             document.getElementById('desktopNotifications').checked = settings.notifications_enabled !== false;
-            
-            // Apply settings to current page
+
             applySettingsToPage(settings);
-            
-            console.log('✅ Settings loaded and applied');
+            console.log('✅ Settings applied to page');
         }
-        
     } catch (error) {
-        console.error('❌ Error loading profile:', error);
+        console.error('❌ Error loading settings:', error);
         showSuccessMessage('⚠️ Failed to load settings', true);
     }
 }
 
-
 // ===================================
 // Save Settings to Backend
 // ===================================
-async function saveSettings() {
+async function saveUserSettings() {
     try {
-        console.log('💾 Saving settings...');
-        
-        if (!authToken) {
-            alert('Please login first!');
-            return;
-        }
-        
-        // ===================================
-        // Collect Account Settings
-        // ===================================
+        console.log('💾 Saving user settings...');
+        if (!authToken) { alert('Please login first!'); return; }
+
         const displayName = document.getElementById('displayName').value.trim();
         const email = document.getElementById('email').value.trim();
-        
-        // ===================================
-        // Collect Appearance Settings
-        // ===================================
         const theme = document.getElementById('theme').value;
         const language = document.getElementById('language').value;
         const fontSize = document.getElementById('fontSize').value;
-        
-        // ===================================
-        // Collect Study Preferences
-        // ===================================
         const pomodoroDuration = parseInt(document.getElementById('pomodoroDuration').value);
         const breakDuration = parseInt(document.getElementById('breakDuration').value);
         const longBreakDuration = parseInt(document.getElementById('longBreakDuration').value);
-        
-        // ===================================
-        // Collect Notification Settings
-        // ===================================
         const soundEffects = document.getElementById('soundEffects').checked;
         const desktopNotifications = document.getElementById('desktopNotifications').checked;
-        
-        // ===================================
-        // Map theme to backend format
-        // ===================================
-        const themeBackendMap = {
-            'blue': 'light',
-            'purple': 'dark',
-            'green': 'light',
-            'pink': 'light',
-            'sunset': 'light',
-            'ocean': 'dark'
-        };
-        
-        const backendTheme = themeBackendMap[theme] || 'light';
-        
-        // ===================================
-        // Map font size to backend format
-        // ===================================
-        const fontSizeBackendMap = {
-            'small': 'small',
-            'medium': 'medium',
-            'large': 'large',
-            'extra-large': 'xlarge'
-        };
-        
-        const backendFontSize = fontSizeBackendMap[fontSize] || 'medium';
-        
-        // ===================================
-        // Prepare settings data
-        // ===================================
-        const settingsData = {
-            theme: backendTheme,
+
+        const themeBackendMap = { 'blue':'light','purple':'dark','green':'light','pink':'light','sunset':'light','ocean':'dark' };
+        const fontSizeBackendMap = { 'small':'small','medium':'medium','large':'large','xlarge':'xlarge','extra-large':'xlarge' };
+
+        const userSettingsData = {
+            theme: themeBackendMap[theme] || 'light',
             language: language,
-            font_size: backendFontSize,
+            font_size: fontSizeBackendMap[fontSize] || 'medium',
             pomodoro_duration: pomodoroDuration,
             short_break: breakDuration,
             long_break: longBreakDuration,
             sound_enabled: soundEffects,
             notifications_enabled: desktopNotifications
         };
-        
-        console.log('📤 Settings to save:', settingsData);
-        
-        // ===================================
-        // Save Settings to Backend
-        // ===================================
+
+        console.log('📤 Settings to save:', userSettingsData);
+
         const settingsResponse = await fetch(`${API_BASE_URL}/api/user/settings`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify(settingsData)
+            body: JSON.stringify(userSettingsData)
         });
-        
         const settingsResult = await settingsResponse.json();
-        
-        if (!settingsResult.success) {
-            throw new Error(settingsResult.msg || 'Failed to save settings');
-        }
-        
-        // ===================================
-        // Update Profile (Name) if changed
-        // ===================================
+        if (!settingsResult.success) throw new Error(settingsResult.msg || 'Failed to save settings');
+
         if (displayName) {
             const profileResponse = await fetch(`${API_BASE_URL}/api/user/profile`, {
                 method: 'PUT',
@@ -197,121 +113,38 @@ async function saveSettings() {
                 },
                 body: JSON.stringify({ name: displayName })
             });
-            
             const profileResult = await profileResponse.json();
             console.log('📝 Profile update:', profileResult);
         }
-        
-        console.log('✅ Settings saved successfully');
-        
-        // ===================================
-        // Save to localStorage for instant sync
-        // ===================================
-        localStorage.setItem('userSettings', JSON.stringify(settingsData));
-        
-        // ===================================
-        // Apply settings immediately
-        // ===================================
-        applySettingsToPage(settingsData);
-        
-        // ===================================
-        // Notify other tabs
-        // ===================================
-        window.dispatchEvent(new CustomEvent('settingsChanged', { detail: settingsData }));
-        
-        // ===================================
-        // Show success message
-        // ===================================
+
+        localStorage.setItem('userSettings', JSON.stringify(userSettingsData));
+        window.userSettings = userSettingsData;
+
+        applySettingsToPage(userSettingsData);
+        window.dispatchEvent(new CustomEvent('settingsChanged', { detail: userSettingsData }));
         showSuccessMessage('✓ Settings saved successfully!');
-        
+        console.log('✅ Settings saved and applied');
     } catch (error) {
         console.error('❌ Error saving settings:', error);
         showSuccessMessage('⚠️ Failed to save settings: ' + error.message, true);
     }
 }
 
-
 // ===================================
-// Apply Settings to Current Page
+// Apply Settings to Page
 // ===================================
-function applySettingsToPage(settings) {
-    // Apply theme (color scheme)
-    applyTheme(settings.theme);
-    
-    // Apply language
-    applyLanguage(settings.language);
-    
-    // Apply font size
-    applyFontSize(settings.font_size);
-    
-    console.log('✅ Settings applied to page');
+function applySettingsToPage(userSettings) {
+    applyTheme(userSettings.theme);
+    applyLanguage(userSettings.language);
+    applyFontSize(userSettings.font_size);
 }
 
-
-function applyTheme(theme) {
-    const html = document.documentElement;
-    const body = document.body;
-    
-    if (theme === 'dark') {
-        html.setAttribute('data-theme', 'dark');
-        body.classList.add('dark-mode');
-        body.classList.remove('light-mode');
-    } else {
-        html.setAttribute('data-theme', 'light');
-        body.classList.add('light-mode');
-        body.classList.remove('dark-mode');
-    }
-}
-
-
-function applyLanguage(language) {
-    document.documentElement.lang = language;
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-}
-
-
-function applyFontSize(fontSize) {
-    const html = document.documentElement;
-    
-    const fontSizeMap = {
-        'small': '14px',
-        'medium': '16px',
-        'large': '18px',
-        'xlarge': '20px'
-    };
-    
-    html.style.fontSize = fontSizeMap[fontSize] || '16px';
-}
-
-
 // ===================================
-// Show Success Message
+// Reset to Default
 // ===================================
-function showSuccessMessage(message, isError = false) {
-    const successMessage = document.getElementById('successMessage');
-    
-    if (successMessage) {
-        successMessage.textContent = message;
-        successMessage.style.background = isError ? '#ef4444' : '#10b981';
-        successMessage.style.display = 'block';
-        
-        setTimeout(() => {
-            successMessage.style.display = 'none';
-        }, 3000);
-    } else {
-        alert(message);
-    }
-}
+async function resetUserSettings() {
+    if (!confirm('⚠️ Are you sure you want to reset all settings to default?')) return;
 
-
-// ===================================
-// Reset Settings to Default
-// ===================================
-async function resetSettings() {
-    if (!confirm('⚠️ Are you sure you want to reset all settings to default?')) {
-        return;
-    }
-    
     try {
         const defaultSettings = {
             theme: 'light',
@@ -323,7 +156,7 @@ async function resetSettings() {
             sound_enabled: true,
             notifications_enabled: true
         };
-        
+
         const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
             method: 'PUT',
             headers: {
@@ -332,50 +165,41 @@ async function resetSettings() {
             },
             body: JSON.stringify(defaultSettings)
         });
-        
         const data = await response.json();
-        
+
         if (data.success) {
             localStorage.setItem('userSettings', JSON.stringify(defaultSettings));
+            window.userSettings = defaultSettings;
             showSuccessMessage('✓ Settings reset to default');
-            
-            // Reload page to show default values
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            throw new Error(data.msg);
-        }
-        
+            setTimeout(() => window.location.reload(), 1500);
+        } else throw new Error(data.msg);
     } catch (error) {
         console.error('❌ Error resetting settings:', error);
-        showSuccessMessage('⚠️ Failed to reset settings', true);
+        showSuccessMessage('Failed to reset settings', true);
     }
 }
 
-
 // ===================================
-// Initialize on Page Load
+// Initialize
 // ===================================
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Initializing settings page...');
-    
-    // Load user profile and settings
-    loadUserProfile();
-    
-    // Setup save button
+    loadUserSettings();
+
     const saveBtn = document.querySelector('.save-btn');
-    if (saveBtn) {
-        // Remove onclick from HTML if exists
-        saveBtn.onclick = null;
-        saveBtn.addEventListener('click', saveSettings);
-    }
-    
-    // Setup reset button
+    if (saveBtn) { saveBtn.onclick = null; saveBtn.addEventListener('click', saveUserSettings); }
+
     const resetBtn = document.querySelector('.action-btn:not(.danger)');
-    if (resetBtn && resetBtn.textContent.includes('Reset')) {
-        resetBtn.onclick = resetSettings;
-    }
-    
-    console.log(' Settings page initialized');
+    if (resetBtn && resetBtn.textContent.includes('Reset')) { resetBtn.onclick = resetUserSettings; }
+
+    console.log('✅ Settings page initialized');
+});
+
+// ===================================
+// Listen for Changes Across Tabs
+// ===================================
+window.addEventListener('settingsChanged', (e) => applySettingsToPage(e.detail));
+window.addEventListener('storage', (e) => {
+    if (e.key === 'userSettings' && e.newValue) applySettingsToPage(JSON.parse(e.newValue));
+    if (e.key === 'themeChanged') window.location.reload();
 });
