@@ -2,6 +2,17 @@
 
 const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
 
+// ===== Map Frontend to Backend Field Names =====
+const fieldMapping = {
+    // Frontend -> Backend
+    pomodoroDuration: 'pomodoro_duration',
+    breakDuration: 'short_break',
+    longBreakDuration: 'long_break',
+    fontSize: 'font_size',
+    soundEffects: 'sound_enabled',
+    desktopNotifications: 'notifications_enabled'
+};
+
 // ===== Save Settings to Backend and LocalStorage =====
 async function saveSettings() {
     const settings = {
@@ -46,40 +57,76 @@ async function saveSettings() {
         localStorage.setItem('eduSyncSettings', JSON.stringify(settings));
         console.log('✅ Settings saved to localStorage');
         
-        // Save to backend
         const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
         
         if (token) {
-            const response = await fetch(`${API_BASE_URL}/api/settings`, {
-                method: 'POST',
+            // Prepare backend data (map field names)
+            const backendSettingsData = {
+                theme: settings.theme,
+                language: settings.language,
+                font_size: settings.fontSize,
+                pomodoro_duration: parseInt(settings.pomodoroDuration),
+                short_break: parseInt(settings.breakDuration),
+                long_break: parseInt(settings.longBreakDuration),
+                notifications_enabled: settings.desktopNotifications,
+                sound_enabled: settings.soundEffects
+            };
+
+            // Update settings in backend
+            const settingsResponse = await fetch(`${API_BASE_URL}/api/user/settings`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(settings)
+                body: JSON.stringify(backendSettingsData)
             });
 
-            const data = await response.json();
+            const settingsData = await settingsResponse.json();
 
-            if (response.ok && data.success) {
-                console.log('✅ Settings saved to backend');
+            if (settingsResponse.ok && settingsData.success) {
+                console.log(' Settings saved to backend');
             } else {
-                console.warn('⚠️ Backend save failed, using localStorage only');
+                console.warn(' Backend settings save failed:', settingsData.msg);
+            }
+
+            // Update profile (name) if changed
+            const profileData = {
+                name: settings.displayName
+            };
+
+            const profileResponse = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(profileData)
+            });
+
+            const profileResult = await profileResponse.json();
+            
+            if (profileResponse.ok && profileResult.success) {
+                console.log('✅ Profile saved to backend');
+            } else {
+                console.warn('⚠️ Backend profile save failed:', profileResult.msg);
             }
         }
         
         // Apply settings immediately
-        applyTheme(settings.theme);
-        applyFontSize(settings.fontSize);
-        applyLanguage(settings.language);
-        applyAnimations(settings.animations);
+        if (window.applyTheme) applyTheme(settings.theme);
+        if (window.applyFontSize) applyFontSize(settings.fontSize);
+        if (window.applyLanguage) applyLanguage(settings.language);
+        if (window.applyAnimations) applyAnimations(settings.animations);
         
         // Show success message
         showSuccessMessage();
         
         // Request notification permission if enabled
         if (settings.desktopNotifications) {
-            requestNotificationPermission();
+            if (window.requestNotificationPermission) {
+                requestNotificationPermission();
+            }
         }
         
     } catch (error) {
@@ -93,36 +140,77 @@ async function loadSettings() {
     try {
         const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
         let settings = null;
+        let userProfile = null;
 
         // Try to load from backend first
         if (token) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/settings`, {
+                // Get full user profile
+                const profileResponse = await fetch(`${API_BASE_URL}/api/user/profile`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                const data = await response.json();
+                const profileData = await profileResponse.json();
 
-                if (response.ok && data.success && data.settings) {
-                    settings = data.settings;
-                    // Save to localStorage as backup
-                    localStorage.setItem('eduSyncSettings', JSON.stringify(settings));
-                    console.log(' Settings loaded from backend');
+                if (profileResponse.ok && profileData.success && profileData.user) {
+                    userProfile = profileData.user;
+                    
+                    // Map backend settings to frontend format
+                    settings = {
+                        // From backend settings object
+                        theme: userProfile.settings.theme || 'blue',
+                        language: userProfile.settings.language || 'en',
+                        fontSize: userProfile.settings.font_size || 'medium',
+                        pomodoroDuration: userProfile.settings.pomodoro_duration || 25,
+                        breakDuration: userProfile.settings.short_break || 5,
+                        longBreakDuration: userProfile.settings.long_break || 30,
+                        desktopNotifications: userProfile.settings.notifications_enabled !== false,
+                        soundEffects: userProfile.settings.sound_enabled !== false,
+                        
+                        // From profile
+                        displayName: userProfile.name || '',
+                        email: userProfile.email || '',
+                        
+                        // Keep localStorage values for these (not in backend yet)
+                        studyField: null,
+                        academicLevel: null,
+                        studyGoal: null,
+                        autoStart: false,
+                        animations: true,
+                        studyReminders: true,
+                        breakNotifications: true,
+                        examReminders: true,
+                        weeklyReport: true,
+                        googleCalendar: false,
+                        autoAddSessions: false,
+                        syncExams: false,
+                        analytics: true
+                    };
+                    
                 }
             } catch (e) {
-                console.warn(' Could not load from backend, using localStorage');
+                console.warn('⚠️ Could not load from backend, using localStorage');
             }
         }
 
-        // Fallback to localStorage
-        if (!settings) {
-            const savedSettings = localStorage.getItem('eduSyncSettings');
-            if (savedSettings) {
-                settings = JSON.parse(savedSettings);
-                console.log(' Settings loaded from localStorage');
+        // Merge with localStorage (for fields not in backend)
+        const localSettings = localStorage.getItem('eduSyncSettings');
+        if (localSettings) {
+            const local = JSON.parse(localSettings);
+            
+            if (settings) {
+                // Merge: keep backend values but add local-only fields
+                settings = {
+                    ...local,  // Local values as base
+                    ...settings  // Override with backend values
+                };
+            } else {
+                settings = local;
             }
+            
+            console.log('✅ Settings merged with localStorage');
         }
 
         // Apply settings to form
@@ -162,6 +250,9 @@ async function loadSettings() {
             // Privacy
             document.getElementById('analytics').checked = settings.analytics !== false;
             
+            // Save merged settings to localStorage
+            localStorage.setItem('eduSyncSettings', JSON.stringify(settings));
+            
             console.log(' Settings applied to form');
         }
         
@@ -180,15 +271,28 @@ async function resetSettings() {
         // Remove from localStorage
         localStorage.removeItem('eduSyncSettings');
         
-        // Reset on backend
         const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
         
+        // Reset on backend (set to default values)
         if (token) {
-            await fetch(`${API_BASE_URL}/api/settings/reset`, {
-                method: 'POST',
+            const defaultSettings = {
+                theme: 'blue',
+                language: 'en',
+                font_size: 'medium',
+                pomodoro_duration: 25,
+                short_break: 5,
+                long_break: 30,
+                notifications_enabled: true,
+                sound_enabled: true
+            };
+
+            await fetch(`${API_BASE_URL}/api/user/settings`, {
+                method: 'PUT',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                }
+                },
+                body: JSON.stringify(defaultSettings)
             });
         }
         
@@ -212,27 +316,25 @@ async function exportData() {
             return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/export`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        // For now, export localStorage data
+        const allData = {
+            settings: JSON.parse(localStorage.getItem('eduSyncSettings') || '{}'),
+            notifications: JSON.parse(localStorage.getItem('pomodoro_notifications') || '[]'),
+            pomodoroState: JSON.parse(localStorage.getItem('pomodoro_forest_state_v2') || '{}'),
+            exportDate: new Date().toISOString()
+        };
 
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `edusync-data-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            alert(' Data exported successfully!');
-        } else {
-            alert(' Failed to export data');
-        }
+        const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `edusync-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        alert(' Data exported successfully!');
         
     } catch (error) {
         console.error(' Error exporting data:', error);
@@ -270,14 +372,15 @@ async function deleteAccount() {
             sessionStorage.clear();
             
             alert(' Account deleted successfully. You will now be redirected to the home page.');
-            window.location.href = '../pages/index.html';
+            window.location.href = '../index.html';
         } else {
-            alert(' Failed to delete account');
+            const data = await response.json();
+            alert(' Failed to delete account: ' + (data.msg || 'Unknown error'));
         }
         
     } catch (error) {
         console.error(' Error deleting account:', error);
-        alert(' Error deleting account');
+        alert(' Error deleting account: ' + error.message);
     }
 }
 
@@ -294,19 +397,27 @@ function showSuccessMessage() {
 
 // ===== Apply Theme Changes (Preview) =====
 document.getElementById('theme')?.addEventListener('change', (e) => {
-    applyTheme(e.target.value);
+    if (window.applyTheme) {
+        applyTheme(e.target.value);
+    }
 });
 
 document.getElementById('fontSize')?.addEventListener('change', (e) => {
-    applyFontSize(e.target.value);
+    if (window.applyFontSize) {
+        applyFontSize(e.target.value);
+    }
 });
 
 document.getElementById('language')?.addEventListener('change', (e) => {
-    applyLanguage(e.target.value);
+    if (window.applyLanguage) {
+        applyLanguage(e.target.value);
+    }
 });
 
 document.getElementById('animations')?.addEventListener('change', (e) => {
-    applyAnimations(e.target.checked);
+    if (window.applyAnimations) {
+        applyAnimations(e.target.checked);
+    }
 });
 
 // ===== Event Listeners for Action Buttons =====
@@ -315,8 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     
     // Export data button
-    const exportBtn = document.querySelector('.action-btn[onclick*="Export"]');
-    if (exportBtn) {
+    const exportBtn = document.querySelector('.action-btn:not(.danger)');
+    if (exportBtn && exportBtn.textContent.includes('Export')) {
         exportBtn.onclick = (e) => {
             e.preventDefault();
             exportData();
@@ -338,11 +449,11 @@ function enableAutoSave() {
     const inputs = document.querySelectorAll('input, select');
     inputs.forEach(input => {
         input.addEventListener('change', () => {
-            console.log('💾 Auto-saving settings...');
+            console.log(' Auto-saving settings...');
             saveSettings();
         });
     });
 }
 
-
+ enableAutoSave();
 
