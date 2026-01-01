@@ -182,7 +182,7 @@ async function loadRecommendedContent() {
             <div class="no-results">
                 <h2> No Content Found</h2>
                 <p>Could not find educational videos for "${studyField}"</p>
-                <p> Try using the search bar below or change your study field in settings</p>
+                <p> Try using the search bar  or change your study field in settings</p>
             </div>
         `;
         showMessage(` No content found for "${studyField}". Try searching manually!`, 'error');
@@ -396,7 +396,6 @@ function setupSearch() {
                     `;
                 }
             } else {
-                console.log(` Found ${videos.length} videos`);
                 
                 const successMsg = document.createElement('div');
                 successMsg.style.cssText = `

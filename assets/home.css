@@ -95,6 +95,10 @@ visibility: visible !important;
             transition: all 0.3s;
 }
 
+.serchVideo{
+    display:block !important;
+    padding: 16px !important;
+}
         .playlist-section {
             margin: 3rem 0;
             display: flex;
