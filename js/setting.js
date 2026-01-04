@@ -55,7 +55,6 @@ async function saveSettings() {
     try {
         // Save to localStorage first (fallback)
         localStorage.setItem('eduSyncSettings', JSON.stringify(settings));
-        console.log('✅ Settings saved to localStorage');
         
         const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
         
@@ -85,7 +84,6 @@ async function saveSettings() {
             const settingsData = await settingsResponse.json();
 
             if (settingsResponse.ok && settingsData.success) {
-                console.log(' Settings saved to backend');
             } else {
                 console.warn(' Backend settings save failed:', settingsData.msg);
             }
@@ -107,7 +105,6 @@ async function saveSettings() {
             const profileResult = await profileResponse.json();
             
             if (profileResponse.ok && profileResult.success) {
-                console.log('✅ Profile saved to backend');
             } else {
                 console.warn('⚠️ Backend profile save failed:', profileResult.msg);
             }
@@ -210,7 +207,6 @@ async function loadSettings() {
                 settings = local;
             }
             
-            console.log('✅ Settings merged with localStorage');
         }
 
         // Apply settings to form
@@ -253,7 +249,6 @@ async function loadSettings() {
             // Save merged settings to localStorage
             localStorage.setItem('eduSyncSettings', JSON.stringify(settings));
             
-            console.log(' Settings applied to form');
         }
         
     } catch (error) {
@@ -312,7 +307,6 @@ async function exportData() {
         const token = localStorage.getItem('session_token') || localStorage.getItem('authToken');
         
         if (!token) {
-            alert(' Please login to export your data');
             return;
         }
 
@@ -449,11 +443,10 @@ function enableAutoSave() {
     const inputs = document.querySelectorAll('input, select');
     inputs.forEach(input => {
         input.addEventListener('change', () => {
-            console.log(' Auto-saving settings...');
             saveSettings();
         });
     });
 }
 
- enableAutoSave();
+enableAutoSave();
 

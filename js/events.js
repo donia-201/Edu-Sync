@@ -45,7 +45,6 @@ async function fetchEvents() {
             events = data.events;
         }
 
-        // Merge new events from localStorage
         const newEvents =
             JSON.parse(localStorage.getItem('newEvents') || '[]');
 
@@ -79,7 +78,7 @@ async function fetchEvents() {
                 </button>
             </div>
         `;
-        updateSyncStatus('error', 'فشل التحميل');
+        updateSyncStatus('error', ' loading failed');
     }
 }
 

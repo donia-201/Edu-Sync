@@ -11,7 +11,6 @@ let allNotifications = [];
 // ===== Request Notification Permission =====
 async function requestNotificationPermission() {
     if (!("Notification" in window)) {
-        console.log("Browser doesn't support notifications");
         return false;
     }
 
@@ -83,7 +82,6 @@ function playNotificationSound() {
         oscillator.start();
         setTimeout(() => oscillator.stop(), 200);
     } catch(e) {
-        console.log('Audio not supported');
     }
 }
 
@@ -337,7 +335,6 @@ clearAllBtn.addEventListener('click', async () => {
                     await markAsRead(notif.backendId);
                 }
             } catch (e) {
-                console.log('Could not clear backend notifications');
             }
         }
         

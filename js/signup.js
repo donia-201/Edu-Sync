@@ -33,19 +33,17 @@ function toggleOtherField() {
 }
 document.getElementById("OtherField").style.display = "none";
 
-// تفعيل فانكشن العين
 setupToggle("password", "togglePassword");
 setupToggle("pass2", "togglePassword2");
 
 // ==================== Regex للتحقق ====================
-const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const emailRegex = /^[A-Za-z]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])[A-Za-z\d\W]{8,}$/;
 
 // ==================== معالجة Sign Up Form ====================
 form.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    // إعادة تعيين الأخطاء
     uNameError.textContent = "";
     emailError.textContent = "";
     passError.textContent = "";
@@ -53,7 +51,6 @@ form.addEventListener("submit", function (e) {
 
     let valid = true;
 
-    // التحقق من Username
     if (!user_Name.value.trim()) {
         uNameError.textContent = "Username is required.";
         valid = false;
@@ -62,7 +59,6 @@ form.addEventListener("submit", function (e) {
         valid = false;
     }
 
-    // التحقق من Email
     if (!email.value.trim()) {
         emailError.textContent = "Email is required.";
         valid = false;
@@ -71,7 +67,6 @@ form.addEventListener("submit", function (e) {
         valid = false;
     }
 
-    // التحقق من Password
     if (!password.value.trim()) {
         passError.textContent = "Password is required.";
         valid = false;
@@ -80,7 +75,6 @@ form.addEventListener("submit", function (e) {
         valid = false;
     }
 
-    // التحقق من Confirm Password
     if (!confirmPassword.value.trim()) {
         confirmPassError.textContent = "Please confirm your password.";
         valid = false;
@@ -95,12 +89,10 @@ form.addEventListener("submit", function (e) {
     const otherField = document.getElementById("OtherField").value.trim();
     const finalStudyField = studyField === "Other" ? otherField : studyField;
 
-    // تعطيل زر الإرسال
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     submitBtn.textContent = "Signing up...";
 
-    // إرسال البيانات للـ Backend
     fetch("https://edu-sync-back-end-production.up.railway.app/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,7 +119,6 @@ form.addEventListener("submit", function (e) {
         })
         .then((data) => {
             if (data.success) {
-                // حفظ الـ token في localStorage
                 localStorage.setItem("authToken", data.token);
                 localStorage.setItem("user", JSON.stringify(data.user));
 

@@ -109,7 +109,6 @@ function applyAnimations(enabled) {
         `;
         document.head.appendChild(style);
         
-        console.log('✅ Animations disabled');
     } else {
         const style = document.getElementById('disable-animations');
         if (style) {
@@ -118,7 +117,6 @@ function applyAnimations(enabled) {
         document.documentElement.style.removeProperty('--animation-duration');
         document.documentElement.style.removeProperty('--transition-duration');
         
-        console.log('✅ Animations enabled');
     }
 }
 
@@ -127,32 +125,23 @@ function applyAllSettings() {
     const settings = loadUserSettings();
     
     if (settings) {
-        console.log('📋 Applying user settings:', settings);
-        
-        // Apply theme
-        if (settings.theme) {
+            if (settings.theme) {
             applyTheme(settings.theme);
         }
         
-        // Apply font size
         if (settings.fontSize) {
             applyFontSize(settings.fontSize);
         }
         
-        // Apply language
         if (settings.language) {
             applyLanguage(settings.language);
         }
         
-        // Apply animations
         if (settings.animations !== undefined) {
             applyAnimations(settings.animations);
         }
         
-        console.log('✅ All settings applied successfully');
-    } else {
-        console.log('ℹ️ No saved settings found, using defaults');
-    }
+    } 
 }
 
 // ===== Get Pomodoro Settings =====
@@ -235,7 +224,6 @@ async function requestNotificationPermission() {
     if (settings.desktopNotifications && 'Notification' in window) {
         if (Notification.permission === 'default') {
             const permission = await Notification.requestPermission();
-            console.log(`🔔 Notification permission: ${permission}`);
             return permission === 'granted';
         }
         return Notification.permission === 'granted';
@@ -249,7 +237,6 @@ function showNotification(title, message, options = {}) {
     const notifSettings = getNotificationSettings();
     
     if (!notifSettings.desktopNotifications) {
-        console.log('ℹ️ Desktop notifications disabled in settings');
         return;
     }
     
@@ -316,7 +303,6 @@ function playNotificationSound() {
 // ===== Listen for Settings Changes =====
 window.addEventListener('storage', (e) => {
     if (e.key === 'eduSyncSettings') {
-        console.log('⚡ Settings changed, reapplying...');
         applyAllSettings();
     }
 });
@@ -339,7 +325,6 @@ window.EduSyncSettings = {
 
 // ===== Auto-apply Settings on Page Load =====
 document.addEventListener('DOMContentLoaded', () => {
-    console.log(' EduSync Settings Module Loaded');
     applyAllSettings();
     
     // Request notification permission if enabled

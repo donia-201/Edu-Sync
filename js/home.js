@@ -80,7 +80,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     currentUser = user;
-    console.log(" User:", currentUser);
 
     const welcomeMsg = document.getElementById("welcome-message");
     const studyFieldMsg = document.getElementById("study-field-message");
@@ -130,7 +129,6 @@ async function loadRecommendedContent() {
     const rawStudy = (currentUser?.study_field) || "computer science";
     const studyField = String(rawStudy).toLowerCase().trim();
     
-    console.log(" Field:", studyField);
 
     let keywords = STUDY_FIELD_KEYWORDS[studyField];
     if (!keywords) {
@@ -141,7 +139,6 @@ async function loadRecommendedContent() {
         ];
     }
     
-    console.log(" Keywords:", keywords);
     
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
 
@@ -150,11 +147,9 @@ async function loadRecommendedContent() {
 
     for (let i = 0; i < Math.min(keywords.length, 5); i++) {
         const keyword = keywords[i];
-        console.log(` [${i+1}] Searching: "${keyword}"`);
         
         try {
             const videos = await searchYouTube(keyword, 6);
-            console.log(` Found: ${videos.length} videos`);
             
             if (videos.length > 0) {
                 if (sectionsCreated === 0) {
@@ -175,7 +170,6 @@ async function loadRecommendedContent() {
         if (sectionsCreated >= 3) break;
     }
 
-    console.log(` Total: ${totalVideos} videos in ${sectionsCreated} sections`);
 
     if (sectionsCreated === 0) {
         container.innerHTML = `
@@ -187,7 +181,6 @@ async function loadRecommendedContent() {
         `;
         showMessage(` No content found for "${studyField}". Try searching manually!`, 'error');
     } else {
-        console.log(` Loaded ${totalVideos} videos successfully!`, 'success');
     }
 }
 
@@ -195,7 +188,6 @@ async function loadRecommendedContent() {
 async function searchYouTube(query, maxResults = 12) {
     try {
         const url = `${BACKEND_BASE}/youtube-search?q=${encodeURIComponent(query)}&max=${maxResults}`;
-        console.log(" Fetching:", url);
 
         const response = await fetch(url);
         
@@ -205,7 +197,6 @@ async function searchYouTube(query, maxResults = 12) {
         }
 
         const data = await response.json();
-        console.log(" Response:", data);
 
         if (data.error) {
             console.error(" API Error:", data.error);
@@ -308,7 +299,6 @@ function openVideoModal(videoId) {
     // Show modal
     modal.classList.add('active');
     
-    console.log(" Playing video:", videoId);
 }
 
 // ==================== Save Video ====================

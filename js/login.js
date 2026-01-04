@@ -29,7 +29,6 @@ form.addEventListener("submit", function (e) {
 
     let valid = true;
 
-    // التحقق من البيانات
     if (!userField.value.trim()) {
         userError.textContent = "Enter email or username.";
         valid = false;
@@ -46,7 +45,6 @@ form.addEventListener("submit", function (e) {
     submitBtn.disabled = true;
     submitBtn.textContent = "Logging in...";
 
-    // إرسال البيانات للـ Backend
     fetch("https://edu-sync-back-end-production.up.railway.app/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,7 +70,6 @@ form.addEventListener("submit", function (e) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Login";
             } else {
-                // حفظ الـ token في localStorage
                 localStorage.setItem("authToken", result.data.token);
                 localStorage.setItem("user", JSON.stringify(result.data.user));
 
@@ -88,17 +85,14 @@ form.addEventListener("submit", function (e) {
         });
 });
 
-// ==================== معالجة Google OAuth Token ====================
-// لما المستخدم يرجع من Google
+// ====================  Google OAuth Token ====================
 window.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
 
     if (token) {
-        // حفظ الـ token
         localStorage.setItem("authToken", token);
 
-        // التحقق من الـ session وجلب بيانات المستخدم
         fetch("https://edu-sync-back-end-production.up.railway.app/verify-session", {
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -108,7 +102,6 @@ window.addEventListener("DOMContentLoaded", () => {
             .then(data => {
                 if (data.success) {
                     localStorage.setItem("user", JSON.stringify(data.user));
-                    // حذف الـ token من الـ URL
                     window.history.replaceState({}, document.title, window.location.pathname);
                     alert("Welcome!");
                     window.location.href = "../pages/home.html";

@@ -1,29 +1,34 @@
+// ===== POMODORO TIMER - COMPLETE FIXED VERSION =====
 window.addEventListener('DOMContentLoaded', () => {
-    function loadSettings() {
+    
+    // ===== Load Settings Dynamically =====
+    function getSettings() {
         const saved = localStorage.getItem('eduSyncSettings');
         if (saved) {
-            const settings = JSON.parse(saved);
-            return {
-                pomodoroDuration: parseInt(settings.pomodoroDuration) || 25,
-                breakDuration: parseInt(settings.breakDuration) || 5,
-                longBreakDuration: parseInt(settings.longBreakDuration) || 30,
-                soundEffects: settings.soundEffects !== false,
-                desktopNotifications: settings.desktopNotifications === true
-            };
+            try {
+                const settings = JSON.parse(saved);
+                return {
+                    pomodoroDuration: parseInt(settings.pomodoroDuration) || 25,
+                    breakDuration: parseInt(settings.breakDuration) || 5,
+                    longBreakDuration: parseInt(settings.longBreakDuration) || 30,
+                    soundEffects: settings.soundEffects !== false,
+                    desktopNotifications: settings.desktopNotifications === true,
+                    autoStart: settings.autoStart !== false // Default true
+                };
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
         }
         return {
             pomodoroDuration: 25,
             breakDuration: 5,
             longBreakDuration: 30,
             soundEffects: true,
-            desktopNotifications: false
+            desktopNotifications: false,
+            autoStart: true
         };
     }
 
-    const settings = loadSettings();
-    let FOCUS_MIN = settings.pomodoroDuration;
-    let SHORT_BREAK_MIN = settings.breakDuration;
-    let LONG_BREAK_MIN = settings.longBreakDuration;
     const SESSIONS_BEFORE_LONG_BREAK = 4;
     const GROW_STAGES = 4;
 
@@ -42,7 +47,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const plantReset = document.getElementById("plantReset");
 
     let mode = "focus"; 
-    let remaining = FOCUS_MIN * 60;
+    let remaining = 0;
     let timer = null;
     let sessionsCompleted = 0;
     let sessionsToday = 0;
@@ -77,6 +82,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ===== Show Browser Notification =====
     function showBrowserNotification(message, type) {
+        const settings = getSettings();
+        
+        if (!settings.desktopNotifications) {
+            console.log('Desktop notifications disabled');
+            return;
+        }
+        
         if ('Notification' in window && Notification.permission === 'granted') {
             const title = type === 'focus' ? '🎉 Focus Session Complete!' : '☕ Break Time!';
             const icon = type === 'focus' ? focusGifUrl : breakGifUrl;
@@ -123,7 +135,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(notificationData)
             });
         } catch (e) {
-            console.log('Failed to save to backend:', e);
+            console.error('Error saving notification to backend:', e);
         }
     }
 
@@ -162,6 +174,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ===== Play Notification Sound =====
     function playNotificationSound() {
+        const settings = getSettings();
+        
         if (!settings.soundEffects) return;
         
         try {
@@ -181,25 +195,27 @@ window.addEventListener('DOMContentLoaded', () => {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.5);
         } catch(e) {
-            console.log('Audio not supported');
+            console.error('Audio not supported:', e);
         }
     }
 
     // ===== Show Motivational Message =====
     function showMotivationalMessage() {
-        const messages = motivationalMessages[mode];
+        // Determine message type (focus or break)
+        const messageType = mode === 'focus' ? 'focus' : 'break';
+        const messages = motivationalMessages[messageType];
         const randomMessage = messages[Math.floor(Math.random() * messages.length)];
         
+        console.log(`📢 Showing ${messageType} notification`);
+        
         // Show browser notification
-        if (settings.desktopNotifications) {
-            showBrowserNotification(randomMessage, mode);
-        }
+        showBrowserNotification(randomMessage, messageType);
         
         // Save to backend
-        saveNotificationToBackend(randomMessage, mode);
+        saveNotificationToBackend(randomMessage, messageType);
         
         // Save to local
-        saveNotificationToLocal(randomMessage, mode);
+        saveNotificationToLocal(randomMessage, messageType);
         
         // Play sound
         playNotificationSound();
@@ -247,6 +263,19 @@ window.addEventListener('DOMContentLoaded', () => {
     sessionsToday = state.sessionsToday || 0;
     sessionsCompleted = state.sessionsCompleted || 0;
 
+    // ===== Get Current Duration =====
+    function getCurrentDuration() {
+        const settings = getSettings();
+        
+        if (mode === "focus") {
+            return settings.pomodoroDuration * 60;
+        } else if (mode === "shortBreak") {
+            return settings.breakDuration * 60;
+        } else {
+            return settings.longBreakDuration * 60;
+        }
+    }
+
     // ===== Format Time =====
     function formatTime(s) {
         const m = Math.floor(s / 60).toString().padStart(2, '0');
@@ -256,15 +285,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ===== Update UI =====
     function updateUI() {
+        const settings = getSettings();
+        
         timeDisplay.textContent = formatTime(remaining);
         
         let modeLabel = '';
         if (mode === "focus") {
-            modeLabel = `Mode: Focus (${FOCUS_MIN}m)`;
+            modeLabel = `Mode: Focus (${settings.pomodoroDuration}m)`;
         } else if (mode === "shortBreak") {
-            modeLabel = `Mode: Short Break (${SHORT_BREAK_MIN}m)`;
+            modeLabel = `Mode: Short Break (${settings.breakDuration}m)`;
         } else {
-            modeLabel = `Mode: Long Break (${LONG_BREAK_MIN}m)`;
+            modeLabel = `Mode: Long Break (${settings.longBreakDuration}m)`;
         }
         modeText.textContent = modeLabel;
         
@@ -285,12 +316,23 @@ window.addEventListener('DOMContentLoaded', () => {
         if (remaining > 0) {
             remaining--;
             updateUI();
+            
+            // Update localStorage every 10 seconds
+            if (remaining % 10 === 0) {
+                localStorage.setItem("pomodoroRemaining", remaining);
+                localStorage.setItem("pomodoroTimestamp", Date.now());
+            }
         } else {
-            // Timer finished
+            // ✅ Timer finished
             clearInterval(timer);
             timer = null;
 
-            // Update counts and show notification
+            console.log(`⏰ Session completed: ${mode}`);
+
+            // Show notification FIRST (before mode change)
+            showMotivationalMessage();
+
+            // Update counts ONLY for focus sessions
             if (mode === "focus") {
                 sessionsToday++;
                 sessionsCompleted++;
@@ -301,43 +343,55 @@ window.addEventListener('DOMContentLoaded', () => {
                     sessionsCompleted,
                     lastDate: new Date().toDateString() 
                 });
-                
-                showMotivationalMessage();
             }
 
-            // Determine next mode
+            // ✅ Determine next mode
             if (mode === "focus") {
                 // After focus: check if long break needed
                 if (sessionsCompleted % SESSIONS_BEFORE_LONG_BREAK === 0) {
                     mode = "longBreak";
-                    remaining = LONG_BREAK_MIN * 60;
                 } else {
                     mode = "shortBreak";
-                    remaining = SHORT_BREAK_MIN * 60;
                 }
             } else {
-                // After break: back to focus
+                // After any break: back to focus
                 mode = "focus";
-                remaining = FOCUS_MIN * 60;
             }
+            
+            // Set new duration
+            remaining = getCurrentDuration();
             
             updateUI();
             
-            // Auto-start next session after 2 seconds
-            setTimeout(() => {
-                startTimer();
-            }, 2000);
+            // ✅ Auto-start next session
+            const settings = getSettings();
+            if (settings.autoStart) {
+                console.log(`🔄 Auto-starting next session: ${mode}`);
+                setTimeout(() => {
+                    startTimer();
+                }, 3000); // 3 seconds delay
+            } else {
+                console.log(`⏸️ Auto-start disabled, waiting for user`);
+                startBtn.textContent = "▶ Start Next Session";
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+            }
         }
     }
 
     // ===== Start Timer =====
     function startTimer() {
-        if (timer) return; // Already running
+        if (timer) {
+            console.log('⚠️ Timer already running');
+            return;
+        }
+        
+        console.log(`▶️ Starting ${mode} timer: ${formatTime(remaining)}`);
         
         isPaused = false;
         timer = setInterval(tick, 1000);
         
-        startBtn.textContent = mode === "focus" ? "🎯 Studying..." : "☕ Break Time";
+        startBtn.textContent = mode === "focus" ? "🎯 Studying..." : "☕ Relaxing...";
         startBtn.disabled = true;
         pauseBtn.disabled = false;
         
@@ -346,6 +400,7 @@ window.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem("pomodoroMode", mode);
         localStorage.setItem("pomodoroRemaining", remaining);
         localStorage.setItem("pomodoroTimestamp", Date.now());
+        localStorage.setItem("pomodoroSessionsCompleted", sessionsCompleted);
     }
 
     // ===== Pause Timer =====
@@ -355,10 +410,13 @@ window.addEventListener('DOMContentLoaded', () => {
             timer = null;
             isPaused = true;
             
+            console.log('⏸️ Timer paused');
+            
             startBtn.textContent = "▶ Resume";
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             
+            localStorage.setItem("pomodoroPaused", "true");
             localStorage.removeItem("pomodoroRunning");
         }
     }
@@ -367,47 +425,65 @@ window.addEventListener('DOMContentLoaded', () => {
     function resetTimer() {
         pauseTimer();
         mode = "focus";
-        remaining = FOCUS_MIN * 60;
-        sessionsCompleted = 0;
+        remaining = getCurrentDuration();
+        
+        console.log('🔄 Timer reset');
         
         localStorage.removeItem("pomodoroRunning");
+        localStorage.removeItem("pomodoroPaused");
         localStorage.removeItem("pomodoroMode");
         localStorage.removeItem("pomodoroRemaining");
         localStorage.removeItem("pomodoroTimestamp");
+        localStorage.removeItem("pomodoroSessionsCompleted");
+        
+        startBtn.textContent = "▶ Start";
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
         
         updateUI();
     }
 
-    // ===== Recover Timer on Page Load =====
-    window.addEventListener("load", () => {
+    // ===== Initialize Timer =====
+    function initializeTimer() {
         const wasRunning = localStorage.getItem("pomodoroRunning");
+        const wasPaused = localStorage.getItem("pomodoroPaused");
         const savedMode = localStorage.getItem("pomodoroMode");
         const savedRemaining = parseInt(localStorage.getItem("pomodoroRemaining"));
         const savedTimestamp = parseInt(localStorage.getItem("pomodoroTimestamp"));
+        const savedSessions = parseInt(localStorage.getItem("pomodoroSessionsCompleted") || '0');
         
-        if (wasRunning && savedMode && savedRemaining && savedTimestamp) {
+        if (savedMode) {
+            mode = savedMode;
+            sessionsCompleted = savedSessions;
+        }
+        
+        if (wasRunning && savedRemaining && savedTimestamp) {
             const elapsed = Math.floor((Date.now() - savedTimestamp) / 1000);
             const newRemaining = savedRemaining - elapsed;
             
-            mode = savedMode;
-            
             if (newRemaining > 0) {
                 remaining = newRemaining;
-                startTimer();
-            } else {
-                // Timer expired while away
-                remaining = (mode === "focus") ? FOCUS_MIN * 60 : 
-                           (mode === "shortBreak") ? SHORT_BREAK_MIN * 60 : 
-                           LONG_BREAK_MIN * 60;
+                console.log(`🔄 Resuming timer: ${formatTime(remaining)} remaining`);
                 updateUI();
+                startTimer();
+                return;
+            } else {
+                console.log('⏰ Timer expired while away');
             }
-        } else {
+        } else if (wasPaused && savedRemaining) {
+            remaining = savedRemaining;
+            console.log(`⏸️ Restored paused timer: ${formatTime(remaining)}`);
             updateUI();
+            return;
         }
+        
+        // Start fresh
+        remaining = getCurrentDuration();
+        updateUI();
         
         // Request notification permission
         requestNotificationPermission();
-    });
+    }
 
     // ===== Event Listeners =====
     startBtn.addEventListener("click", () => {
@@ -436,7 +512,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     sessionsCompleted,
                     lastDate: new Date().toDateString() 
                 });
-                updateUI();
+                resetTimer();
             }
         });
     }
@@ -479,6 +555,15 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ===== Initial UI Update =====
-    updateUI();
+    // ===== Listen for Settings Changes =====
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'eduSyncSettings') {
+            console.log('⚙️ Settings changed, updating UI');
+            updateUI();
+        }
+    });
+
+    // ===== Initialize =====
+    console.log('🚀 Pomodoro Timer initialized');
+    initializeTimer();
 });

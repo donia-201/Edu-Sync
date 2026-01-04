@@ -58,7 +58,7 @@ const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
                 const token = getToken();
                 
                 if (!token) {
-                    showError('⚠️ Please login first. Redirecting...');
+                    showError(' Please login first. Redirecting...');
                     setTimeout(() => {
                         window.location.href = '../index.html';
                     }, 2000);
@@ -75,7 +75,7 @@ const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
                 });
                 
                 if (response.status === 401) {
-                    showError('⚠️ Session expired. Please login again.');
+                    showError(' Session expired. Please login again.');
                     localStorage.removeItem('session_token');
                     localStorage.removeItem('authToken');
                     setTimeout(() => {
@@ -366,7 +366,6 @@ const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
             });
         });
 
-        // ✅ Modal only shows when delete button is clicked
         confirmDeleteBtn.addEventListener('click', async () => {
             if (noteToDelete) {
                 await deleteNote(noteToDelete);

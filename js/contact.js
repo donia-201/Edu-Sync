@@ -32,7 +32,7 @@ function handleSubmit(event) {
     })
     .catch(error => {
         console.error("EmailJS Error:", error);
-        alert("حصل خطأ أثناء الإرسال ");
+        alert(" Error while sending");
     })
     .finally(() => {
         submitBtn.textContent = originalText;
