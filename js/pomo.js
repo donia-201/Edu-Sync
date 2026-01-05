@@ -1,4 +1,4 @@
-// ===== POMODORO TIMER - COMPLETE FIXED VERSION =====
+// ===== POMODORO TIMER - AUTO-RUN VERSION =====
 window.addEventListener('DOMContentLoaded', () => {
     
     // ===== Load Settings Dynamically =====
@@ -12,8 +12,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     breakDuration: parseInt(settings.breakDuration) || 5,
                     longBreakDuration: parseInt(settings.longBreakDuration) || 30,
                     soundEffects: settings.soundEffects !== false,
-                    desktopNotifications: settings.desktopNotifications === true,
-                    autoStart: settings.autoStart !== false // Default true
+                    desktopNotifications: settings.desktopNotifications === true
                 };
             } catch (e) {
                 console.error('Error loading settings:', e);
@@ -24,8 +23,7 @@ window.addEventListener('DOMContentLoaded', () => {
             breakDuration: 5,
             longBreakDuration: 30,
             soundEffects: true,
-            desktopNotifications: false,
-            autoStart: true
+            desktopNotifications: false
         };
     }
 
@@ -51,23 +49,22 @@ window.addEventListener('DOMContentLoaded', () => {
     let timer = null;
     let sessionsCompleted = 0;
     let sessionsToday = 0;
-    let isPaused = false;
 
     const API_BASE_URL = 'https://edu-sync-back-end-production.up.railway.app';
 
     const motivationalMessages = {
         focus: [
-            { ar: "🌟 رائع! أكملت جلسة تركيز كاملة. أنت تقترب من هدفك!", en: "Amazing! You completed a full focus session!" },
-            { ar: "💪 إنجاز عظيم! كل دقيقة من تركيزك تبني مستقبلك.", en: "Great achievement! Every minute builds your future." },
-            { ar: "🎯 مذهل! أنت تثبت أن الإرادة أقوى من أي شيء.", en: "Incredible! You're proving willpower conquers all." },
-            { ar: "🚀 ممتاز! استمر في هذا الزخم، النجاح قريب جداً.", en: "Excellent! Keep this momentum, success is close." },
-            { ar: "✨ فخور بك! أنت تحول أحلامك إلى واقع خطوة بخطوة.", en: "Proud of you! You're turning dreams into reality." }
+            { ar: " رائع! أكملت جلسة تركيز كاملة. أنت تقترب من هدفك!", en: "Amazing! You completed a full focus session!" },
+            { ar: " إنجاز عظيم! كل دقيقة من تركيزك تبني مستقبلك.", en: "Great achievement! Every minute builds your future." },
+            { ar: " مذهل! أنت تثبت أن الإرادة أقوى من أي شيء.", en: "Incredible! You're proving willpower conquers all." },
+            { ar: " ممتاز! استمر في هذا الزخم، النجاح قريب جداً.", en: "Excellent! Keep this momentum, success is close." },
+            { ar: " فخور بك! أنت تحول أحلامك إلى واقع خطوة بخطوة.", en: "Proud of you! You're turning dreams into reality." }
         ],
         break: [
-            { ar: "☕ وقت الاستراحة! اشرب ماء، تمدد قليلاً، وعد بطاقة أكبر.", en: "Break time! Drink water, stretch, come back stronger." },
-            { ar: "🌸 خذ نفساً عميقاً... أنت تستحق هذه الراحة.", en: "Take a deep breath... you deserve this rest." },
-            { ar: "🎵 استرخ الآن! العقل يحتاج راحة ليبدع أكثر.", en: "Relax now! The mind needs rest to be creative." },
-            { ar: "🌈 استراحة جميلة! حرك جسمك قليلاً واشحن طاقتك.", en: "Nice break! Move your body and recharge." }
+            { ar: " وقت الاستراحة! اشرب ماء، تمدد قليلاً، وعد بطاقة أكبر.", en: "Break time! Drink water, stretch, come back stronger." },
+            { ar: " خذ نفساً عميقاً... أنت تستحق هذه الراحة.", en: "Take a deep breath... you deserve this rest." },
+            { ar: " استرخ الآن! العقل يحتاج راحة ليبدع أكثر.", en: "Relax now! The mind needs rest to be creative." },
+            { ar: " استراحة جميلة! حرك جسمك قليلاً واشحن طاقتك.", en: "Nice break! Move your body and recharge." }
         ]
     };
 
@@ -90,7 +87,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         
         if ('Notification' in window && Notification.permission === 'granted') {
-            const title = type === 'focus' ? '🎉 Focus Session Complete!' : '☕ Break Time!';
+            const title = type === 'focus' ? '🎉 Focus Session Complete!' : '☕ Break Complete!';
             const icon = type === 'focus' ? focusGifUrl : breakGifUrl;
             
             const notification = new Notification(title, {
@@ -119,7 +116,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!token) return;
 
             const notificationData = {
-                title: type === 'focus' ? 'Focus Session Complete! 🎉' : 'Break Time! ☕',
+                title: type === 'focus' ? 'Focus Session Complete! 🎉' : 'Break Complete! ☕',
                 message: message.ar + ' | ' + message.en,
                 type: 'pomodoro',
                 category: type,
@@ -186,7 +183,7 @@ window.addEventListener('DOMContentLoaded', () => {
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
             
-            oscillator.frequency.value = mode === 'focus' ? 800 : 600;
+            oscillator.frequency.value = 800;
             oscillator.type = 'sine';
             
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
@@ -200,24 +197,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===== Show Motivational Message =====
-    function showMotivationalMessage() {
-        // Determine message type (focus or break)
-        const messageType = mode === 'focus' ? 'focus' : 'break';
-        const messages = motivationalMessages[messageType];
+    function showMotivationalMessage(sessionType) {
+        const messages = motivationalMessages[sessionType];
         const randomMessage = messages[Math.floor(Math.random() * messages.length)];
         
-        console.log(`📢 Showing ${messageType} notification`);
+        console.log(` Showing ${sessionType} notification`);
         
-        // Show browser notification
-        showBrowserNotification(randomMessage, messageType);
-        
-        // Save to backend
-        saveNotificationToBackend(randomMessage, messageType);
-        
-        // Save to local
-        saveNotificationToLocal(randomMessage, messageType);
-        
-        // Play sound
+        showBrowserNotification(randomMessage, sessionType);
+        saveNotificationToBackend(randomMessage, sessionType);
+        saveNotificationToLocal(randomMessage, sessionType);
         playNotificationSound();
     }
 
@@ -236,7 +224,6 @@ window.addEventListener('DOMContentLoaded', () => {
             
             const s = JSON.parse(raw);
             
-            // Reset if new day
             if (s.lastDate !== new Date().toDateString()) {
                 s.sessionsToday = 0;
                 s.sessionsCompleted = 0;
@@ -304,9 +291,26 @@ window.addEventListener('DOMContentLoaded', () => {
         focusGif.src = mode === "focus" ? focusGifUrl : breakGifUrl;
         focusGif.alt = mode === "focus" ? "Focus Mode" : "Break Mode";
 
-        treeContainer.className = "tree stage-" + Math.min(stage, GROW_STAGES);
+        // ✅ Update tree stage
+        if (treeContainer) {
+            treeContainer.className = "tree stage-" + Math.min(stage, GROW_STAGES);
+        }
+        
         const names = ["Seed", "Seedling", "Young Tree", "Mature Tree", "Fully Grown Tree"];
-        stageText.textContent = `Level: ${names[Math.min(stage, GROW_STAGES)]}`;
+        if (stageText) {
+            stageText.textContent = `Level: ${names[Math.min(stage, GROW_STAGES)]}`;
+        }
+
+        // ✅ Animate trunk
+        const trunk = document.querySelector('.trunk');
+        if (trunk) {
+            trunk.style.transition = "none";
+            trunk.style.strokeDashoffset = "300";
+            setTimeout(() => {
+                trunk.style.transition = "stroke-dashoffset 900ms ease";
+                trunk.style.strokeDashoffset = "0";
+            }, 10);
+        }
 
         document.title = `${formatTime(remaining)} - EduSync ${mode === 'focus' ? '🎯' : '☕'}`;
     }
@@ -317,20 +321,18 @@ window.addEventListener('DOMContentLoaded', () => {
             remaining--;
             updateUI();
             
-            // Update localStorage every 10 seconds
             if (remaining % 10 === 0) {
                 localStorage.setItem("pomodoroRemaining", remaining);
                 localStorage.setItem("pomodoroTimestamp", Date.now());
             }
         } else {
-            // ✅ Timer finished
             clearInterval(timer);
             timer = null;
 
-            console.log(`⏰ Session completed: ${mode}`);
 
-            // Show notification FIRST (before mode change)
-            showMotivationalMessage();
+            // Determine notification type based on CURRENT mode
+            const notificationType = mode === 'focus' ? 'focus' : 'break';
+            showMotivationalMessage(notificationType);
 
             // Update counts ONLY for focus sessions
             if (mode === "focus") {
@@ -345,57 +347,39 @@ window.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // ✅ Determine next mode
+            // ✅ Switch to next mode
             if (mode === "focus") {
-                // After focus: check if long break needed
                 if (sessionsCompleted % SESSIONS_BEFORE_LONG_BREAK === 0) {
                     mode = "longBreak";
                 } else {
                     mode = "shortBreak";
                 }
             } else {
-                // After any break: back to focus
                 mode = "focus";
             }
             
-            // Set new duration
             remaining = getCurrentDuration();
-            
             updateUI();
             
-            // ✅ Auto-start next session
-            const settings = getSettings();
-            if (settings.autoStart) {
-                console.log(`🔄 Auto-starting next session: ${mode}`);
-                setTimeout(() => {
-                    startTimer();
-                }, 3000); // 3 seconds delay
-            } else {
-                console.log(`⏸️ Auto-start disabled, waiting for user`);
-                startBtn.textContent = "▶ Start Next Session";
-                startBtn.disabled = false;
-                pauseBtn.disabled = true;
-            }
+            //  Auto-start next session immediately (no delay)
+            setTimeout(() => {
+                startTimer();
+            }, 2000); // 2 seconds to show notification
         }
     }
 
     // ===== Start Timer =====
     function startTimer() {
-        if (timer) {
-            console.log('⚠️ Timer already running');
-            return;
-        }
+        if (timer) return;
         
-        console.log(`▶️ Starting ${mode} timer: ${formatTime(remaining)}`);
+        console.log(` Starting ${mode}: ${formatTime(remaining)}`);
         
-        isPaused = false;
         timer = setInterval(tick, 1000);
         
         startBtn.textContent = mode === "focus" ? "🎯 Studying..." : "☕ Relaxing...";
         startBtn.disabled = true;
         pauseBtn.disabled = false;
         
-        // Save to localStorage for recovery
         localStorage.setItem("pomodoroRunning", "true");
         localStorage.setItem("pomodoroMode", mode);
         localStorage.setItem("pomodoroRemaining", remaining);
@@ -408,11 +392,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if (timer) {
             clearInterval(timer);
             timer = null;
-            isPaused = true;
-            
-            console.log('⏸️ Timer paused');
-            
-            startBtn.textContent = "▶ Resume";
+                        
+            startBtn.textContent = " Resume";
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             
@@ -427,7 +408,7 @@ window.addEventListener('DOMContentLoaded', () => {
         mode = "focus";
         remaining = getCurrentDuration();
         
-        console.log('🔄 Timer reset');
+        console.log(' Timer reset');
         
         localStorage.removeItem("pomodoroRunning");
         localStorage.removeItem("pomodoroPaused");
@@ -436,7 +417,7 @@ window.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem("pomodoroTimestamp");
         localStorage.removeItem("pomodoroSessionsCompleted");
         
-        startBtn.textContent = "▶ Start";
+        startBtn.textContent = " Start";
         startBtn.disabled = false;
         pauseBtn.disabled = true;
         
@@ -463,25 +444,20 @@ window.addEventListener('DOMContentLoaded', () => {
             
             if (newRemaining > 0) {
                 remaining = newRemaining;
-                console.log(`🔄 Resuming timer: ${formatTime(remaining)} remaining`);
+                console.log(` Resuming: ${formatTime(remaining)}`);
                 updateUI();
                 startTimer();
                 return;
-            } else {
-                console.log('⏰ Timer expired while away');
             }
         } else if (wasPaused && savedRemaining) {
             remaining = savedRemaining;
-            console.log(`⏸️ Restored paused timer: ${formatTime(remaining)}`);
+            console.log(` Paused: ${formatTime(remaining)}`);
             updateUI();
             return;
         }
         
-        // Start fresh
         remaining = getCurrentDuration();
         updateUI();
-        
-        // Request notification permission
         requestNotificationPermission();
     }
 
@@ -502,7 +478,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (plantReset) {
         plantReset.addEventListener("click", () => {
-            if (confirm("Are you sure you want to reset your progress? This will start a new tree.")) {
+            if (confirm("Reset progress and start a new tree?")) {
                 stage = 0;
                 sessionsToday = 0;
                 sessionsCompleted = 0;
@@ -517,7 +493,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===== Handle Page Visibility Change =====
+    // ===== Handle Page Visibility =====
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && timer) {
             const savedRemaining = parseInt(localStorage.getItem("pomodoroRemaining"));
@@ -534,14 +510,13 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Update timestamp when page becomes visible
         if (!document.hidden && timer) {
             localStorage.setItem("pomodoroRemaining", remaining);
             localStorage.setItem("pomodoroTimestamp", Date.now());
         }
     });
 
-    // ===== Save State Before Unload =====
+    // ===== Save Before Unload =====
     window.addEventListener("beforeunload", () => {
         if (timer) {
             localStorage.setItem("pomodoroRemaining", remaining);
@@ -558,12 +533,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // ===== Listen for Settings Changes =====
     window.addEventListener('storage', (e) => {
         if (e.key === 'eduSyncSettings') {
-            console.log('⚙️ Settings changed, updating UI');
             updateUI();
         }
     });
 
     // ===== Initialize =====
-    console.log('🚀 Pomodoro Timer initialized');
     initializeTimer();
 });
