@@ -37,10 +37,13 @@ setupToggle("password", "togglePassword");
 setupToggle("pass2", "togglePassword2");
 
 // ==================== Regex للتحقق ====================
-const emailRegex = /^[A-Za-z]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const usernameRegex = /^[A-Za-z]+$/;
+
+const emailRegex = /^[A-Za-z][A-Za-z0-9._-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])[A-Za-z\d\W]{8,}$/;
 
-// ==================== معالجة Sign Up Form ====================
+// ====================  Sign Up Form ====================
 form.addEventListener("submit", function (e) {
     e.preventDefault();
 
@@ -51,22 +54,28 @@ form.addEventListener("submit", function (e) {
 
     let valid = true;
 
+    // ✅ Validate Username
     if (!user_Name.value.trim()) {
         uNameError.textContent = "Username is required.";
         valid = false;
     } else if (user_Name.value.trim().length < 3) {
         uNameError.textContent = "Username must be at least 3 characters.";
         valid = false;
+    } else if (!usernameRegex.test(user_Name.value.trim())) {
+        uNameError.textContent = "Username must contain only letters (no numbers or symbols).";
+        valid = false;
     }
 
+    // ✅ Validate Email
     if (!email.value.trim()) {
         emailError.textContent = "Email is required.";
         valid = false;
     } else if (!emailRegex.test(email.value.trim())) {
-        emailError.textContent = "Enter a valid email.";
+        emailError.textContent = "Email must start with a letter and be valid.";
         valid = false;
     }
 
+    // ✅ Validate Password
     if (!password.value.trim()) {
         passError.textContent = "Password is required.";
         valid = false;
@@ -75,6 +84,7 @@ form.addEventListener("submit", function (e) {
         valid = false;
     }
 
+    // ✅ Validate Confirm Password
     if (!confirmPassword.value.trim()) {
         confirmPassError.textContent = "Please confirm your password.";
         valid = false;
@@ -120,6 +130,7 @@ form.addEventListener("submit", function (e) {
         .then((data) => {
             if (data.success) {
                 localStorage.setItem("authToken", data.token);
+                localStorage.setItem("session_token", data.token); // ✅ Save as session_token too
                 localStorage.setItem("user", JSON.stringify(data.user));
 
                 alert("Account created! Redirecting...");
