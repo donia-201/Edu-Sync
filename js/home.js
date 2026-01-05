@@ -252,7 +252,7 @@ function createVideoCard(video) {
     const channel = safeText(snippet.channelTitle);
 
     const card = document.createElement("div");
-    card.className = "video-card col-lg-4 col-md-6 col-sm-10";
+    card.className = "video-card col-lg-3 col-md-5 col-sm-10";
 
     card.innerHTML = `
         <img src="${thumbnail}" alt="${title}" class="video-thumbnail">
