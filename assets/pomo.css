@@ -255,6 +255,21 @@
 
   .meta{ color:var(--muted); font-size:13px; text-align:center; margin-top:10px; }
 
+.trunk {
+    stroke: #8B4513;
+    stroke-width: 4;
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+    transition: stroke-dashoffset 900ms ease;
+}
+
+.tree.stage-1 .trunk,
+.tree.stage-2 .trunk,
+.tree.stage-3 .trunk,
+.tree.stage-4 .trunk {
+    stroke-dashoffset: 0;
+}
+
   /* small responsive */
   @media (max-width:760px){ 
     body{flex-direction:column; align-items:center}
